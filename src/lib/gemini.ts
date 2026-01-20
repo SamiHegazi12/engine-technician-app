@@ -3,33 +3,34 @@ export const extractVehicleInfoFromImage = async (
   mimeType: string = "image/jpeg"
 ) => {
   try {
-    console.log("[Gemini] Sending image to Vercel Server Proxy...");
+    console.log("[Gemini] Sending image to Vercel Server (Edge)...");
 
-    // Call the serverless function we just created
-    // Note: On localhost, this fails without 'vercel dev'. It works on the Live Site.
     const response = await fetch('/api/scan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        base64Image, 
-        mimeType 
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Image, mimeType }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error || `Server Error: ${response.status}`);
+      console.error("[Gemini] Server Error Details:", data);
+      // Check for specific Google API errors passed back from server
+      if (data.details?.message?.includes('429')) {
+        alert("⚠️ تم تجاوز حد الاستخدام المجاني (Quota Exceeded). يرجى المحاولة لاحقاً.");
+      } else if (data.details?.message?.includes('400')) {
+        alert("⚠️ طلب غير صالح (Bad Request). قد تكون الصورة غير واضحة.");
+      } else {
+        alert("⚠️ فشل الاتصال بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.");
+      }
+      return null;
     }
 
-    const data = await response.json();
-    console.log("[Gemini] Success from Server:", data);
+    console.log("[Gemini] Success:", data);
     return data;
 
   } catch (error: any) {
-    console.error("[Gemini] Scan Failed:", error);
-    alert("حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.");
+    console.error("[Gemini] Network Error:", error);
     return null;
   }
 };
