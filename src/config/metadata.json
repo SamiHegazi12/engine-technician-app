@@ -1,0 +1,7 @@
+{
+  "name": "Engine Technician Co. | مركز تقني المحركات",
+  "description": "Digital repair agreement and control panel for car service centers with AI-assisted VIN scanning and Arabic localization.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

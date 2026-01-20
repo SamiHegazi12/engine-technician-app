@@ -1,0 +1,35 @@
+.
+├── DEPLOYMENT_GUIDE.md
+├── FILE_MAPPING.md
+├── PROJECT_STRUCTURE.txt
+├── QUICK_START.md
+├── README.md
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── setup-windows.bat
+├── src
+│   ├── app
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── components
+│   │   ├── layout
+│   │   └── ui
+│   ├── config
+│   │   ├── constants.ts
+│   │   └── metadata.json
+│   ├── features
+│   │   └── agreements
+│   ├── lib
+│   │   └── gemini.ts
+│   ├── styles
+│   │   └── index.css
+│   └── types
+│       └── index.ts
+├── tailwind.config.js
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+11 directories, 21 files

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Engine Technician Co. | مركز تقني المحركات</title>
+    <!-- Tailwind CSS is handled via Vite + PostCSS — DO NOT use CDN in production -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Tajawal', sans-serif;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .signature-pad {
+        touch-action: none;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 0.5rem;
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; padding: 0 !important; margin: 0 !important; }
+        .print-container { 
+          width: 100% !important; 
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important; 
+          box-shadow: none !important; 
+        }
+        @page { 
+          size: A4; 
+          margin: 0.5cm; 
+        }
+        input, select, textarea {
+          border: none !important;
+          padding: 0 !important;
+          background: transparent !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>
