@@ -4,17 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 console.log("[Gemini Config] API Key Status:", apiKey ? "✅ Loaded" : "❌ MISSING (Check Vercel Env Vars)");
 
+// Note: We use the generic client. For 404 fixes, we will try specific API versions below.
 const genAI = new GoogleGenerativeAI(apiKey || "");
-
-// List of models to try in order of preference (Fastest/Cheapest -> Most Capable)
-const MODELS_TO_TRY = [
-  "gemini-1.5-flash",       // Standard stable
-  "gemini-1.5-flash-001",   // Specific version 001
-  "gemini-1.5-flash-002",   // Specific version 002
-  "gemini-1.5-flash-8b",    // High efficiency version
-  "gemini-1.5-pro",         // More powerful, often has different quota
-  "gemini-2.0-flash-exp"    // Experimental (sometimes free)
-];
 
 export const extractVehicleInfoFromImage = async (
   base64Image: string, 
@@ -42,11 +33,28 @@ export const extractVehicleInfoFromImage = async (
     4. Be very precise with the VIN and ID numbers.
   `;
 
-  // Loop through models until one works
-  for (const modelId of MODELS_TO_TRY) {
+  // UPDATED STRATEGY: 
+  // 1. Try 'v1beta' (default) with standard models
+  // 2. Try 'v1' (stable) if beta fails (Fixes 404s)
+  // 3. Try legacy models (gemini-pro)
+  const STRATEGIES = [
+    { model: "gemini-2.0-flash", apiVersion: "v1beta" }, // Newest
+    { model: "gemini-1.5-flash", apiVersion: "v1" },     // Stable v1 (Fixes 404)
+    { model: "gemini-1.5-flash", apiVersion: "v1beta" }, // Beta
+    { model: "gemini-pro", apiVersion: "v1" },           // Legacy (Most likely to work)
+    { model: "gemini-1.5-flash-8b", apiVersion: "v1" }   // Efficiency
+  ];
+
+  for (const strategy of STRATEGIES) {
     try {
-      console.log(`[Gemini] Attempting scan with model: ${modelId}...`);
-      const model = genAI.getGenerativeModel({ model: modelId });
+      console.log(`[Gemini] Attempting scan... Model: ${strategy.model} (API: ${strategy.apiVersion})`);
+      
+      // Get model with specific config
+      const model = genAI.getGenerativeModel({ 
+        model: strategy.model
+      }, {
+        apiVersion: strategy.apiVersion
+      });
 
       const result = await model.generateContent([
         prompt,
@@ -61,7 +69,7 @@ export const extractVehicleInfoFromImage = async (
       const response = await result.response;
       const text = response.text().trim();
       
-      console.log(`[Gemini] Success with ${modelId}! Raw Response:`, text);
+      console.log(`[Gemini] ✅ Success with ${strategy.model}!`);
 
       // Clean potential markdown formatting
       const jsonStr = text.replace(/```json|```/g, "").trim();
@@ -71,7 +79,7 @@ export const extractVehicleInfoFromImage = async (
         console.log("[Gemini] Parsed Data:", data);
         return data;
       } catch (e) {
-        // Fallback: try to find JSON pattern if parsing fails
+        // Fallback: try to find JSON pattern
         const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           return JSON.parse(jsonMatch[0]);
@@ -80,14 +88,16 @@ export const extractVehicleInfoFromImage = async (
       }
 
     } catch (error: any) {
-      // Log failure but continue to next model
-      console.warn(`[Gemini] Failed with ${modelId}:`, error.message || error);
+      console.warn(`[Gemini] Failed with ${strategy.model} (${strategy.apiVersion}):`, error.message || error);
       
-      // If it's the last model and it failed, throw error or return null
-      if (modelId === MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
+      // If we are at the last strategy and it failed
+      if (strategy === STRATEGIES[STRATEGIES.length - 1]) {
         console.error("[Gemini] All models failed.");
-        if (error.message?.includes('429')) {
-           alert("⚠️ Service Busy: All available AI models are currently busy or quota exceeded. Please try again later.");
+        
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+           alert("⚠️ تنبيه: تم تجاوز حد الاستخدام المجاني للذكاء الاصطناعي. يرجى تفعيل الفوترة في حساب Google Cloud أو المحاولة لاحقاً.");
+        } else if (error.message?.includes('404')) {
+           alert("⚠️ تنبيه: لا يمكن الوصول لنموذج الذكاء الاصطناعي في منطقتك حالياً.");
         }
         return null;
       }
