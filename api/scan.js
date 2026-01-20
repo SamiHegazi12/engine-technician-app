@@ -15,30 +15,22 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
   try {
     const { base64Image, mimeType } = req.body;
 
     if (!process.env.VITE_GEMINI_API_KEY) {
-      return res.status(500).json({ error: "Server API Key is missing. Check Vercel Env Vars." });
+      return res.status(500).json({ error: "Server API Key is missing" });
     }
 
     const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
 
-    // LIST OF MODELS TO TRY (In order of priority)
-    // 1. gemini-2.0-flash: The new standard (Should work on US Server)
-    // 2. gemini-1.5-flash: The previous standard
-    // 3. gemini-1.5-pro: Higher capability fallback
-    // 4. gemini-pro: Legacy fallback
-    const modelsToTry = [
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-pro",
-      "gemini-pro"
+    // DEFINING STRATEGIES: Model Name + API Version
+    // By 2026, 'v1beta' often drops support for older models. We must try 'v1'.
+    const strategies = [
+      { model: "gemini-1.5-flash", apiVersion: "v1" },       // STABLE v1 (Best bet)
+      { model: "gemini-1.5-flash-8b", apiVersion: "v1" },    // High efficiency v1
+      { model: "gemini-2.0-flash", apiVersion: "v1beta" },   // Newest beta
+      { model: "gemini-pro", apiVersion: "v1" }              // Legacy v1
     ];
 
     const prompt = `
@@ -62,13 +54,18 @@ export default async function handler(req, res) {
       3. Translate English brand/color names to Arabic.
     `;
 
-    // LOOP: Try models one by one
+    // Loop through strategies
     let lastError = null;
 
-    for (const modelId of modelsToTry) {
+    for (const strategy of strategies) {
       try {
-        console.log(`[Server] Attempting scan with model: ${modelId}`);
-        const model = genAI.getGenerativeModel({ model: modelId });
+        console.log(`[Server] Attempting: ${strategy.model} using ${strategy.apiVersion}...`);
+        
+        // Configure specific model and API version
+        const model = genAI.getGenerativeModel(
+          { model: strategy.model },
+          { apiVersion: strategy.apiVersion }
+        );
 
         const result = await model.generateContent([
           prompt,
@@ -82,7 +79,7 @@ export default async function handler(req, res) {
 
         const response = await result.response;
         const text = response.text().trim();
-        console.log(`[Server] Success with ${modelId}`);
+        console.log(`[Server] Success with ${strategy.model}!`);
 
         // Clean JSON
         const jsonStr = text.replace(/```json|```/g, "").trim();
@@ -94,21 +91,23 @@ export default async function handler(req, res) {
             if (match) data = JSON.parse(match[0]);
         }
 
-        // If we got here, it worked! Return immediately.
         return res.status(200).json(data);
 
       } catch (error) {
-        console.warn(`[Server] Failed with ${modelId}: ${error.message}`);
+        console.warn(`[Server] Failed ${strategy.model}: ${error.message}`);
         lastError = error;
-        // Continue to next model...
       }
     }
 
-    // If loop finishes without success
-    throw lastError || new Error("All models failed.");
+    // If all failed, return the error from the FIRST strategy (usually the most relevant one)
+    // or the last one if they are all similar.
+    throw lastError || new Error("All models failed to respond.");
 
   } catch (error) {
     console.error("Server Scan Final Error:", error);
-    return res.status(500).json({ error: error.message || "Internal Server Error" });
+    return res.status(500).json({ 
+      error: error.message || "Internal Server Error",
+      details: "Check Vercel Function Logs for more info." 
+    });
   }
 }
