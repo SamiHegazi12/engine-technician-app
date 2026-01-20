@@ -22,91 +22,106 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.VITE_GEMINI_API_KEY;
     
-    // CORRECTED MODEL ID:
-    // This is the standard experimental free model on OpenRouter.
-    const model = "google/gemini-2.0-flash-exp:free";
+    // LIST OF FREE MODELS TO TRY (In order of preference)
+    // If one is busy (429), we try the next.
+    const models = [
+      "google/gemini-2.0-flash-exp:free",         // Fastest, but often busy
+      "google/gemini-2.0-pro-exp-02-05:free",     // New, high quality
+      "meta-llama/llama-3.2-11b-vision-instruct:free", // Reliable backup (Not Google)
+      "google/gemini-flash-1.5-8b"                // Fallback (Very cheap if free fails)
+    ];
 
-    console.log(`[Server] Requesting OpenRouter with model: ${model}`);
+    let lastError = null;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://engine-technician-app.vercel.app",
-        "X-Title": "Engine Technician App",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          {
-            role: "user",
-            content: [
+    for (const model of models) {
+      console.log(`[Server] Requesting OpenRouter: ${model}...`);
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://engine-technician-app.vercel.app",
+            "X-Title": "Engine Technician App",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
               {
-                type: "text",
-                text: `You are an expert OCR system for vehicle documents (Saudi Istimara). 
-                Extract the following data into a raw JSON object:
-                - vin: 17-character VIN number
-                - brand: Car manufacturer (Arabic)
-                - model: Car model
-                - year: Manufacturing year (4 digits)
-                - color: Car color (Arabic)
-                - plateNumbers: Numeric part of plate
-                - plateLetters: Arabic letters of plate
-                - customerName: Full name (Arabic)
-                - idNumber: National ID (10 digits)
-                
-                Rules: Return ONLY valid JSON. No markdown. If not found, use null.`
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`
-                }
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `You are an expert OCR system for vehicle documents (Saudi Istimara). 
+                    Extract the following data into a raw JSON object:
+                    - vin: 17-character VIN number
+                    - brand: Car manufacturer (Arabic)
+                    - model: Car model
+                    - year: Manufacturing year (4 digits)
+                    - color: Car color (Arabic)
+                    - plateNumbers: Numeric part of plate
+                    - plateLetters: Arabic letters of plate
+                    - customerName: Full name (Arabic)
+                    - idNumber: National ID (10 digits)
+                    
+                    Rules: Return ONLY valid JSON. No markdown. If not found, use null.`
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:image/jpeg;base64,${base64Image}`
+                    }
+                  }
+                ]
               }
             ]
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Validate we actually got a message (OpenRouter sometimes returns empty 200s on free tier)
+          const content = data.choices?.[0]?.message?.content;
+          
+          if (content) {
+             console.log(`[Server] Success with ${model}`);
+             
+             // Clean JSON string
+             const jsonStr = content.replace(/```json|```/g, "").trim();
+             let parsedData = null;
+             
+             try {
+                parsedData = JSON.parse(jsonStr);
+             } catch(e) {
+                const match = jsonStr.match(/\{[\s\S]*\}/);
+                if (match) parsedData = JSON.parse(match[0]);
+             }
+
+             if (parsedData) {
+               return res.status(200).json(parsedData);
+             }
           }
-        ]
-      })
+        } else {
+          // Log error but continue loop
+          const errText = await response.text();
+          console.warn(`[Server] Failed ${model}: ${response.status} - ${errText}`);
+          lastError = { status: response.status, message: errText };
+        }
+      } catch (e) {
+        console.warn(`[Server] Network Exception ${model}: ${e.message}`);
+        lastError = { message: e.message };
+      }
+      
+      // Small delay before trying next model to avoid spamming
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // If all models fail
+    return res.status(500).json({ 
+      error: "All AI providers are busy", 
+      details: lastError 
     });
-
-    if (!response.ok) {
-        const errText = await response.text();
-        console.error(`[OpenRouter Error] ${response.status}: ${errText}`);
-        return res.status(response.status).json({ error: `Provider Error: ${errText}` });
-    }
-
-    const data = await response.json();
-    
-    // Check if we got a valid choice
-    if (!data.choices || data.choices.length === 0) {
-       console.error("[OpenRouter] No choices returned:", data);
-       // Fallback logic: sometimes 'free' models are busy/empty.
-       throw new Error("AI Provider returned no results (Model might be busy).");
-    }
-
-    const content = data.choices[0]?.message?.content;
-
-    if (!content) {
-        throw new Error("No content received from AI provider");
-    }
-
-    // Clean JSON string
-    const jsonStr = content.replace(/```json|```/g, "").trim();
-    
-    let parsedData = null;
-    try {
-        parsedData = JSON.parse(jsonStr);
-    } catch(e) {
-        const match = jsonStr.match(/\{[\s\S]*\}/);
-        if (match) parsedData = JSON.parse(match[0]);
-    }
-
-    if (parsedData) {
-        return res.status(200).json(parsedData);
-    } else {
-        throw new Error("Failed to parse JSON response");
-    }
 
   } catch (error) {
     console.error("Server Logic Error:", error);
