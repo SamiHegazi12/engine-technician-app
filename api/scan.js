@@ -22,13 +22,13 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.VITE_GEMINI_API_KEY;
     
-    // LIST OF FREE MODELS TO TRY (In order of preference)
-    // If one is busy (429), we try the next.
+    // UPDATED LIST OF FREE MODELS (Verified IDs)
+    // The script will try them one by one.
     const models = [
-      "google/gemini-2.0-flash-exp:free",         // Fastest, but often busy
-      "google/gemini-2.0-pro-exp-02-05:free",     // New, high quality
-      "meta-llama/llama-3.2-11b-vision-instruct:free", // Reliable backup (Not Google)
-      "google/gemini-flash-1.5-8b"                // Fallback (Very cheap if free fails)
+      "google/gemini-2.0-flash-lite-preview-02-05:free", // Newest fast model
+      "google/gemini-2.0-pro-exp-02-05:free",     // High intelligence
+      "google/gemini-2.0-flash-exp:free",         // Standard experimental
+      "meta-llama/llama-3.2-11b-vision-instruct:free" // Reliable Non-Google fallback
     ];
 
     let lastError = null;
@@ -81,10 +81,10 @@ export default async function handler(req, res) {
 
         if (response.ok) {
           const data = await response.json();
-          // Validate we actually got a message (OpenRouter sometimes returns empty 200s on free tier)
           const content = data.choices?.[0]?.message?.content;
           
-          if (content) {
+          // Check if content exists and isn't empty
+          if (content && content.length > 5) {
              console.log(`[Server] Success with ${model}`);
              
              // Clean JSON string
@@ -101,25 +101,26 @@ export default async function handler(req, res) {
              if (parsedData) {
                return res.status(200).json(parsedData);
              }
+          } else {
+             console.warn(`[Server] Empty response from ${model}`);
           }
         } else {
-          // Log error but continue loop
           const errText = await response.text();
           console.warn(`[Server] Failed ${model}: ${response.status} - ${errText}`);
           lastError = { status: response.status, message: errText };
         }
       } catch (e) {
-        console.warn(`[Server] Network Exception ${model}: ${e.message}`);
+        console.warn(`[Server] Exception ${model}: ${e.message}`);
         lastError = { message: e.message };
       }
       
-      // Small delay before trying next model to avoid spamming
-      await new Promise(r => setTimeout(r, 500));
+      // Delay 1 second before retrying next model
+      await new Promise(r => setTimeout(r, 1000));
     }
 
     // If all models fail
     return res.status(500).json({ 
-      error: "All AI providers are busy", 
+      error: "All AI models are currently busy or unavailable.", 
       details: lastError 
     });
 
