@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { base64Image, mimeType } = req.body;
+    const { base64Image } = req.body; // OpenRouter handles mime-type automatically in data URL
 
     if (!process.env.VITE_GEMINI_API_KEY) {
       return res.status(500).json({ error: 'Server API Key is missing' });
@@ -22,81 +22,86 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.VITE_GEMINI_API_KEY;
     
-    // STRATEGY: 
-    // 1. gemini-1.5-flash-8b: The "Nano" version. Extremely cheap/free, often bypasses main quota.
-    // 2. gemini-1.5-flash-002: Specific stable version (sometimes works when "latest" fails).
-    // 3. gemini-1.0-pro: The legacy model. Old but reliable for free tier.
-    const models = [
-      "gemini-1.5-flash-8b", 
-      "gemini-1.5-flash-002",
-      "gemini-1.0-pro"
-    ];
+    // Use the OpenRouter "Free" model list
+    // 1. google/gemini-2.0-flash-lite-preview-02-05:free (Newest free)
+    // 2. google/gemini-2.0-flash-exp:free (Experimental free)
+    // 3. google/gemini-flash-1.5-8b (Very cheap fallback)
+    const model = "google/gemini-2.0-flash-lite-preview-02-05:free";
 
-    let errors = [];
+    console.log(`[Server] Requesting OpenRouter with model: ${model}`);
 
-    for (const model of models) {
-      console.log(`[Server] Trying ${model}...`);
-      
-      // We try both v1beta and v1 endpoints for each model
-      const versions = ['v1beta', 'v1'];
-      
-      for (const version of versions) {
-         const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`;
-         
-         try {
-            const payload = {
-                contents: [{
-                parts: [
-                    { text: "Extract vehicle data JSON: vin, brand (Arabic), model, year, color (Arabic), plateNumbers, plateLetters, customerName (Arabic), idNumber." },
-                    {
-                    inline_data: {
-                        mime_type: mimeType || "image/jpeg",
-                        data: base64Image
-                    }
-                    }
-                ]
-                }]
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://engine-technician-app.vercel.app", // Required by OpenRouter
+        "X-Title": "Engine Technician App",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `You are an expert OCR system for vehicle documents (Saudi Istimara). 
+                Extract the following data into a raw JSON object:
+                - vin: 17-character VIN number
+                - brand: Car manufacturer (Arabic)
+                - model: Car model
+                - year: Manufacturing year (4 digits)
+                - color: Car color (Arabic)
+                - plateNumbers: Numeric part of plate
+                - plateLetters: Arabic letters of plate
+                - customerName: Full name (Arabic)
+                - idNumber: National ID (10 digits)
                 
-                if (text) {
-                    const jsonStr = text.replace(/```json|```/g, "").trim();
-                    let parsedData = null;
-                    try {
-                        parsedData = JSON.parse(jsonStr);
-                    } catch(e) {
-                        const match = jsonStr.match(/\{[\s\S]*\}/);
-                        if (match) parsedData = JSON.parse(match[0]);
-                    }
-                    
-                    if (parsedData) {
-                        return res.status(200).json(parsedData);
-                    }
+                Rules: Return ONLY valid JSON. No markdown. If not found, use null.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`
                 }
-            } else {
-                const errText = await response.text();
-                errors.push(`${model} (${version}): ${response.status} - ${errText}`);
-            }
-         } catch (e) {
-             errors.push(`${model} (${version}): Exception - ${e.message}`);
-         }
-      }
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[OpenRouter Error] ${response.status}: ${errText}`);
+        return res.status(response.status).json({ error: `Provider Error: ${errText}` });
     }
 
-    // If we reach here, EVERYTHING failed.
-    return res.status(500).json({ 
-      error: "All models failed", 
-      details: errors 
-    });
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+        throw new Error("No content received from AI provider");
+    }
+
+    // Clean JSON string
+    const jsonStr = content.replace(/```json|```/g, "").trim();
+    
+    let parsedData = null;
+    try {
+        parsedData = JSON.parse(jsonStr);
+    } catch(e) {
+        // Fallback regex
+        const match = jsonStr.match(/\{[\s\S]*\}/);
+        if (match) parsedData = JSON.parse(match[0]);
+    }
+
+    if (parsedData) {
+        return res.status(200).json(parsedData);
+    } else {
+        throw new Error("Failed to parse JSON response");
+    }
 
   } catch (error) {
     console.error("Server Logic Error:", error);
