@@ -11,8 +11,20 @@ const App: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Load Data from LocalStorage
     const saved = localStorage.getItem('repair_history');
     if (saved) setAgreements(JSON.parse(saved));
+
+    // 2. 💀 FORCE UPDATE: Kill "Zombie" Service Workers 💀
+    // This forces mobile browsers/Brave to stop using the old cached version
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          console.log('Force unregistering Service Worker to fix mobile sync...');
+          registration.unregister();
+        }
+      });
+    }
   }, []);
 
   const saveToHistory = (newAgreements: RepairAgreement[]) => {
@@ -36,6 +48,23 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen">
+      {/* --- VERSION DEBUG BANNER (Verify Update) --- */}
+      <div style={{ 
+        backgroundColor: '#dc2626', // Red color
+        color: 'white', 
+        textAlign: 'center', 
+        padding: '8px', 
+        fontSize: '14px', 
+        fontWeight: 'bold',
+        position: 'sticky',
+        top: 0,
+        zIndex: 9999,
+        borderBottom: '1px solid white'
+      }}>
+        v4.0 - FIX ACTIVE (Check OCR Now)
+      </div>
+      {/* ------------------------------------------- */}
+
       {view === 'CONTROL_PANEL' && (<ControlPanel agreements={agreements} onNew={() => setView('NEW_AGREEMENT')} onEdit={(id) => { setEditingId(id); setView('EDIT_AGREEMENT'); }} onStatusChange={handleStatusChange} />)}
       {(view === 'NEW_AGREEMENT' || view === 'EDIT_AGREEMENT') && (<RepairAgreementForm initialData={agreements.find(a => a.id === editingId)} onSave={handleSave} onBack={() => { setView('CONTROL_PANEL'); setEditingId(null); }} agreementsCount={yearlyCount} />)}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t px-4 py-2 text-[10px] text-gray-400 text-center md:hidden pointer-events-none z-30 no-print">مركز تقني المحركات © {new Date().getFullYear()}</footer>
