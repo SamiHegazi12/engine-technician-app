@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { base64Image } = req.body; // OpenRouter handles mime-type automatically in data URL
+    const { base64Image } = req.body;
 
     if (!process.env.VITE_GEMINI_API_KEY) {
       return res.status(500).json({ error: 'Server API Key is missing' });
@@ -22,11 +22,9 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.VITE_GEMINI_API_KEY;
     
-    // Use the OpenRouter "Free" model list
-    // 1. google/gemini-2.0-flash-lite-preview-02-05:free (Newest free)
-    // 2. google/gemini-2.0-flash-exp:free (Experimental free)
-    // 3. google/gemini-flash-1.5-8b (Very cheap fallback)
-    const model = "google/gemini-2.0-flash-lite-preview-02-05:free";
+    // CORRECTED MODEL ID:
+    // This is the standard experimental free model on OpenRouter.
+    const model = "google/gemini-2.0-flash-exp:free";
 
     console.log(`[Server] Requesting OpenRouter with model: ${model}`);
 
@@ -34,7 +32,7 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://engine-technician-app.vercel.app", // Required by OpenRouter
+        "HTTP-Referer": "https://engine-technician-app.vercel.app",
         "X-Title": "Engine Technician App",
         "Content-Type": "application/json"
       },
@@ -79,7 +77,15 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    
+    // Check if we got a valid choice
+    if (!data.choices || data.choices.length === 0) {
+       console.error("[OpenRouter] No choices returned:", data);
+       // Fallback logic: sometimes 'free' models are busy/empty.
+       throw new Error("AI Provider returned no results (Model might be busy).");
+    }
+
+    const content = data.choices[0]?.message?.content;
 
     if (!content) {
         throw new Error("No content received from AI provider");
@@ -92,7 +98,6 @@ export default async function handler(req, res) {
     try {
         parsedData = JSON.parse(jsonStr);
     } catch(e) {
-        // Fallback regex
         const match = jsonStr.match(/\{[\s\S]*\}/);
         if (match) parsedData = JSON.parse(match[0]);
     }
