@@ -1,51 +1,47 @@
-export const config = {
-  runtime: 'edge', // Use Edge Runtime for faster, cheaper execution
-};
+// NOTE: We removed "runtime: edge" to support larger payloads if needed.
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   // 1. CORS Setup
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    });
+    res.status(200).end();
+    return;
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
-      status: 405, 
-      headers: { 'Content-Type': 'application/json' } 
-    });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { base64Image, mimeType } = await req.json();
+    const { base64Image, mimeType } = req.body;
 
     if (!process.env.VITE_GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Server API Key is missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(500).json({ error: 'Server API Key is missing' });
     }
 
     const apiKey = process.env.VITE_GEMINI_API_KEY;
     
-    // STRATEGY: Try the newest model (2.0) first, then fallback to stable (1.5)
-    // We use DIRECT REST endpoints to avoid SDK version mismatch.
+    // Models to try (Direct REST API)
+    // Priority: 1.5-flash (Standard/Cheap) -> 1.5-pro (More capable)
     const models = [
-      "gemini-2.0-flash", 
-      "gemini-1.5-flash"
+      "gemini-1.5-flash",
+      "gemini-1.5-pro",
+      "gemini-2.0-flash"
     ];
 
     let lastError = null;
 
     for (const model of models) {
-      console.log(`[Server] Trying direct REST fetch for: ${model}...`);
+      console.log(`[Server] Trying ${model}...`);
       
+      // Using 'v1beta' endpoint which is generally most available
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       
       const payload = {
@@ -70,11 +66,9 @@ export default async function handler(req) {
 
       if (response.ok) {
         const data = await response.json();
-        // Extract text from the REST response structure
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (text) {
-          // Clean JSON
           const jsonStr = text.replace(/```json|```/g, "").trim();
           let parsedData = null;
           try {
@@ -85,43 +79,23 @@ export default async function handler(req) {
           }
           
           if (parsedData) {
-            return new Response(JSON.stringify(parsedData), {
-              status: 200,
-              headers: { 
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-              }
-            });
+            return res.status(200).json(parsedData);
           }
         }
       } else {
         const errText = await response.text();
-        console.warn(`[Server] Failed ${model}: ${response.status} - ${errText}`);
+        console.warn(`[Server] Failed ${model}: ${response.status}`);
         lastError = { status: response.status, message: errText };
-        
-        // If Quota exceeded (429), no need to try other models usually, but we continue just in case.
       }
     }
 
-    // If loop ends
-    return new Response(JSON.stringify({ 
+    return res.status(500).json({ 
       error: "All models failed", 
       details: lastError 
-    }), {
-      status: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    console.error("Server Logic Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }
