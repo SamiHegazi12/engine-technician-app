@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { RepairAgreement, Claim, VehicleData, CustomerData, RepairStatus } from '@/types';
-import { CAR_MANUFACTURERS, COLORS, RIYAL_SYMBOL, TERMS_AND_CONDITIONS } from '@/config/constants';
+import { RepairAgreement, Claim, RepairStatus } from '@/types';
+import { COLORS, RIYAL_SYMBOL, TERMS_AND_CONDITIONS } from '@/config/constants';
 import SignaturePad from '@/components/ui/SignaturePad';
 import { extractVehicleInfoFromImage } from '@/lib/gemini';
 
@@ -15,9 +14,10 @@ interface Props {
 const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agreementsCount = 0 }) => {
   const isEditing = !!initialData;
   const currentYear = new Date().getFullYear().toString();
+  
   const generateSerial = () => {
     const count = (agreementsCount + 1).toString().padStart(4, '0');
-    return `${currentYear}${count}`;
+    return `${currentYear}-${count}`;
   };
 
   const [formData, setFormData] = useState<RepairAgreement>(initialData || {
@@ -38,17 +38,6 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
 
   const [showTerms, setShowTerms] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-
-  const handleHistoryLookup = useCallback((key: 'vin' | 'plateNumbers', value: string) => {
-    const history = localStorage.getItem('repair_history');
-    if (history) {
-      const records: RepairAgreement[] = JSON.parse(history);
-      const match = records.find(r => r.vehicle[key] === value);
-      if (match) {
-        setFormData(prev => ({ ...prev, vehicle: { ...match.vehicle, vin: prev.vehicle.vin, plateNumbers: prev.vehicle.plateNumbers }, customer: match.customer }));
-      }
-    }
-  }, []);
 
   const handleVINScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,27 +81,22 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
     reader.readAsDataURL(file);
   };
 
-  const validateDate = (dateStr: string) => {
-    if (!dateStr) return true;
-    const selectedDate = new Date(dateStr);
-    if (selectedDate.getUTCDay() === 5) {
-      alert("عذراً، يوم الجمعة يوم إجازة. يرجى اختيار تاريخ آخر.");
-      return false;
-    }
-    return true;
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => { setFormData(prev => ({ ...prev, photos: [...prev.photos, reader.result as string] })); };
-      reader.readAsDataURL(file);
-    });
+  const handlePlateLettersChange = (val: string) => {
+    // Remove non-Arabic characters and limit to 3 letters
+    const cleaned = val.replace(/[^\u0600-\u06FF]/g, '').slice(0, 3);
+    // Automatically add spaces between letters for Saudi plates
+    const formatted = cleaned.split('').join(' ').trim();
+    setFormData({ ...formData, vehicle: { ...formData.vehicle, plateLetters: formatted } });
   };
 
   const addClaim = () => { setFormData(prev => ({ ...prev, claims: [...prev.claims, { id: crypto.randomUUID(), description: '', cost: 0 }] })); };
+  const removeClaim = (id: string) => { setFormData(prev => ({ ...prev, claims: prev.claims.filter(c => c.id !== id) })); };
+  const updateClaim = (idx: number, field: keyof Claim, value: any) => {
+    const newClaims = [...formData.claims];
+    newClaims[idx] = { ...newClaims[idx], [field]: value };
+    setFormData({ ...formData, claims: newClaims });
+  };
+
   const subtotal = formData.claims.reduce((acc, c) => acc + c.cost, 0);
   const total = subtotal * (1 - formData.discountPercent / 100);
 
@@ -125,25 +109,22 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
   const handleWhatsAppShare = () => {
     let phone = formData.customer.phone;
     if (phone.startsWith('05')) phone = '966' + phone.substring(1);
-    const pdfLink = `https://your-domain.com/view-agreement/${formData.id}`;
-    const message = `مرحباً ${formData.customer.fullName}، إليك نسخة من عقد إصلاح سيارتك رقم ${formData.serialNumber}\nيمكنك تحميل العقد من الرابط التالي:\n${pdfLink}`;
+    const message = `مرحباً ${formData.customer.fullName}، إليك تفاصيل عقد الصيانة الخاص بك رقم ${formData.serialNumber}. الإجمالي: ${total.toFixed(2)} ر.س`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => { setFormData(prev => ({ ...prev, photos: [...prev.photos, reader.result as string] })); };
+      reader.readAsDataURL(file);
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 space-y-6 pb-32 print:p-0 print:space-y-1 print:pb-0 text-right" dir="rtl">
-      {/* A4 Print Header */}
-      <div className="hidden print:flex justify-between items-center border-b-2 border-blue-900 pb-1 mb-1">
-        <div className="text-right">
-          <h1 className="text-lg font-black text-blue-900">شركة تقني المحركات التجارية</h1>
-          <p className="text-[10px] text-gray-600">عقد صيانة وإصلاح مركبة</p>
-        </div>
-        <div className="text-left">
-          <div className="text-sm font-bold text-blue-900">رقم العقد: {formData.serialNumber}</div>
-          <div className="text-[10px] text-gray-500">{new Date(formData.createdAt).toLocaleDateString('ar-SA')}</div>
-        </div>
-      </div>
-
       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm no-print">
         <button type="button" onClick={onBack} className="text-gray-600 flex items-center gap-2 font-bold"><span>→</span> عودة</button>
         <h1 className="text-xl font-bold text-blue-900">عقد صيانة سيارة</h1>
@@ -152,48 +133,29 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
 
       <div className="grid grid-cols-1 gap-6 print:gap-1">
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
-          <h2 className="text-lg font-bold border-b pb-2 mb-2 text-blue-900 print:text-xs print:mb-0 print:pb-0">بيانات عقد الإصلاح</h2>
+          <div className="flex justify-between items-center border-b pb-2 print:pb-0">
+            <h2 className="text-lg font-bold text-blue-900 print:text-xs">بيانات المركبة</h2>
+            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white no-print`}>
+              {isScanning ? 'جاري المسح...' : '📷 مسح الاستمارة ذكياً'}
+              <input type="file" accept="image/*" capture="environment" onChange={handleVINScan} className="hidden" disabled={isScanning} />
+            </label>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
             <div className="text-right">
-              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ الإنشاء</label>
-              <input type="text" value={new Date(formData.createdAt).toLocaleString('en-GB')} disabled className="w-full bg-gray-50 border rounded p-2 text-right text-gray-500 print:bg-white print:border-none print:p-0 print:text-[10px]" />
-            </div>
-            <div className="text-right">
-              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ التسليم*</label>
-              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => { if (validateDate(e.target.value)) setFormData({...formData, expectedDeliveryDate: e.target.value}); }} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
-            </div>
-            <div className="text-right">
-              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم بطاقة العمل</label>
-              <input type="text" value={formData.jobCardNumber} onChange={e => setFormData({...formData, jobCardNumber: e.target.value})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" placeholder="أدخل الرقم" />
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
-          <div className="flex flex-col gap-4 border-b pb-2 print:pb-0 print:gap-0">
-            <h2 className="text-lg font-bold text-blue-900 print:text-xs">بيانات المركبة</h2>
-            <label className="w-full cursor-pointer bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-3 no-print shadow-lg transition-transform active:scale-95">
-              {isScanning ? 'جاري المسح...' : '📷 مسح VIN ذكي بالذكاء الاصطناعي'}
-              <input type="file" accept="image/*" capture="environment" onChange={handleVINScan} className="hidden" />
-            </label>
-            <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الشاصي (VIN)*</label>
-              <input type="text" required maxLength={17} value={formData.vehicle.vin} onChange={e => { const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); setFormData({...formData, vehicle: {...formData.vehicle, vin: val}}); if(val.length >= 10) handleHistoryLookup('vin', val); }} className="w-full border-2 border-blue-100 rounded-lg p-3 text-right font-mono text-lg print:border-none print:p-0 print:text-[10px]" placeholder="17 حرفاً ورقم" />
+              <input type="text" required maxLength={17} value={formData.vehicle.vin} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, vin: e.target.value.toUpperCase()}})} className="w-full border rounded p-2 text-left font-mono font-bold print:border-none print:p-0 print:text-[10px]" />
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
             <div className="text-right">
-              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">نوع المركبة*</label>
-              <input list="manufacturers" required value={formData.vehicle.type} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
-              <datalist id="manufacturers">{CAR_MANUFACTURERS.map(m => <option key={m} value={m} />)}</datalist>
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">نوع السيارة*</label>
+              <input type="text" required value={formData.vehicle.type} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">الموديل*</label>
-              <input type="text" required value={formData.vehicle.model} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, model: e.target.value.toUpperCase()}})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
+              <input type="text" required value={formData.vehicle.model} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, model: e.target.value}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">سنة الصنع*</label>
-              <input type="number" required min="1950" max="2030" value={formData.vehicle.year} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, year: e.target.value}})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
+              <input type="text" required maxLength={4} value={formData.vehicle.year} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, year: e.target.value.replace(/\D/g, '')}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">العداد*</label>
@@ -209,8 +171,8 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">اللوحة*</label>
               <div className="flex gap-1 print:text-[10px]">
-                <input type="text" required value={formData.vehicle.plateLetters} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, plateLetters: e.target.value}})} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="حروف" />
-                <input type="text" required value={formData.vehicle.plateNumbers} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, plateNumbers: e.target.value}})} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="أرقام" />
+                <input type="text" required value={formData.vehicle.plateLetters} onChange={e => handlePlateLettersChange(e.target.value)} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="ح ر ف" />
+                <input type="text" required value={formData.vehicle.plateNumbers} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, plateNumbers: e.target.value.replace(/\D/g, '').slice(0, 4)}})} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="أرقام" />
               </div>
             </div>
           </div>
@@ -228,19 +190,20 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
           <div className="flex justify-between items-center border-b pb-2 print:pb-0"><h2 className="text-lg font-bold text-blue-900 print:text-xs">الطلبات والأعطال</h2><button type="button" onClick={addClaim} className="text-blue-600 text-sm font-bold no-print">+ إضافة طلب</button></div>
           <div className="space-y-2 print:space-y-0">{formData.claims.map((claim, idx) => (
-            <div key={claim.id} className="flex gap-2 items-center">
-              <input className="flex-grow border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" placeholder={`طلب #${idx + 1}`} value={claim.description} onChange={e => { const n = [...formData.claims]; n[idx].description = e.target.value; setFormData({...formData, claims: n}); }} />
-              <div className="w-24 relative"><input type="number" className="w-full border rounded p-2 pr-8 text-right font-bold print:border-none print:p-0 print:text-[10px]" value={claim.cost === 0 ? '' : claim.cost} onChange={e => { const n = [...formData.claims]; n[idx].cost = parseFloat(e.target.value) || 0; setFormData({...formData, claims: n}); }} /><span className="absolute left-2 top-2 text-gray-400 text-xs print:hidden">{RIYAL_SYMBOL}</span></div>
+            <div key={claim.id} className="flex gap-2 items-center no-print">
+              <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2">✕</button>
+              <input type="number" required value={claim.cost === 0 ? '' : claim.cost} onChange={e => updateClaim(idx, 'cost', parseFloat(e.target.value) || 0)} className="w-24 border rounded p-2 text-center" placeholder="السعر" />
+              <input type="text" required value={claim.description} onChange={e => updateClaim(idx, 'description', e.target.value)} className="flex-grow border rounded p-2 text-right" placeholder="وصف العطل أو الطلب" />
             </div>
           ))}</div>
-          <div className="pt-2 space-y-1 border-t text-left print:pt-0">
-            <div className="flex justify-between font-bold print:text-[10px]"><span>{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span><span>المجموع:</span></div>
+          <div className="hidden print:block">{formData.claims.map((c, i) => <div key={i} className="flex justify-between border-b py-1 text-[10px]"><span>{c.cost} {RIYAL_SYMBOL}</span><span className="text-right">{c.description}</span></div>)}</div>
+          <div className="pt-4 space-y-2 border-t">
+            <div className="flex justify-between text-gray-600 print:text-[10px]"><span>{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span><span>المجموع:</span></div>
             <div className="flex justify-between items-center no-print"><input type="number" className="w-20 border rounded p-1 text-center font-bold" value={formData.discountPercent === 0 ? '' : formData.discountPercent} onChange={e => setFormData({...formData, discountPercent: parseFloat(e.target.value) || 0})} /><span>الخصم (%):</span></div>
             <div className="flex justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0"><span>{total.toFixed(2)} {RIYAL_SYMBOL}</span><span>الإجمالي النهائي:</span></div>
           </div>
         </section>
 
-        {/* Damage Photos section - Compact for print */}
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
           <h2 className="text-lg font-bold border-b pb-2 text-blue-900 print:text-xs print:pb-0 print:mb-0">صور حالة الهيكل</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:grid-cols-4 print:gap-1">
@@ -256,25 +219,6 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </label>
           </div>
         </section>
-
-        {/* Terms and Signature for Print */}
-        <div className="hidden print:block mt-2 space-y-2">
-          <div className="text-[8px] text-gray-600 border p-1 rounded bg-gray-50 leading-tight">
-            <h3 className="font-bold mb-0 text-blue-900">إقرار العميل:</h3>
-            أقر أنا الموقع أدناه بأنني قد اطلعت على كافة الشروط والأحكام الخاصة بشركة تقني المحركات التجارية والمذكورة في هذا العقد، وأوافق عليها جملة وتفصيلاً. كما أقر بصحة البيانات الواردة أعلاه وأفوض المركز بالبدء في أعمال الإصلاح المتفق عليها.
-          </div>
-          <div className="flex justify-between items-end pt-2">
-            <div className="text-center space-y-1">
-              <div className="w-24 border-b border-black"></div>
-              <div className="font-bold text-[10px]">ختم المركز</div>
-            </div>
-            <div className="text-center space-y-1">
-              {formData.signature && <img src={formData.signature} className="max-h-12 mx-auto mb-0" />}
-              <div className="w-24 border-b border-black"></div>
-              <div className="font-bold text-[10px]">توقيع العميل</div>
-            </div>
-          </div>
-        </div>
 
         <div className="no-print space-y-6">
           <div className="flex items-center gap-4 justify-end"><label htmlFor="terms" className="font-bold cursor-pointer">أقر بالموافقة على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 underline font-black">الشروط والأحكام</button></label><input type="checkbox" id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="w-7 h-7 accent-blue-600" /></div>
