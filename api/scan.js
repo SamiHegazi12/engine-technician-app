@@ -25,10 +25,10 @@ export default async function handler(req, res) {
     // UPDATED LIST OF FREE MODELS (Verified IDs)
     // The script will try them one by one.
     const models = [
-      "google/gemini-2.0-flash-lite-preview-02-05:free", // Newest fast model
-      "google/gemini-2.0-pro-exp-02-05:free",     // High intelligence
-      "google/gemini-2.0-flash-exp:free",         // Standard experimental
-      "meta-llama/llama-3.2-11b-vision-instruct:free" // Reliable Non-Google fallback
+      "google/gemini-2.0-flash-001",
+      "google/gemini-1.5-flash",
+      "google/gemini-1.5-pro",
+      "meta-llama/llama-3.2-11b-vision-instruct:free"
     ];
 
     let lastError = null;

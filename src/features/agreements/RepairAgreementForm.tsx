@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RepairAgreement, Claim, RepairStatus } from '@/types';
-import { COLORS, RIYAL_SYMBOL, TERMS_AND_CONDITIONS } from '@/config/constants';
+import { COLORS, RIYAL_SYMBOL, TERMS_AND_CONDITIONS, CAR_MANUFACTURERS } from '@/config/constants';
 import SignaturePad from '@/components/ui/SignaturePad';
 import { extractVehicleInfoFromImage } from '@/lib/gemini';
 
@@ -139,7 +139,22 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ التسليم*</label>
-              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => setFormData({...formData, expectedDeliveryDate: e.target.value})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
+              <input 
+                type="date" 
+                required 
+                min={new Date().toISOString().split('T')[0]} 
+                value={formData.expectedDeliveryDate} 
+                onChange={e => {
+                  const date = new Date(e.target.value);
+                  if (date.getDay() === 5) {
+                    alert("عذراً، يوم الجمعة إجازة. يرجى اختيار تاريخ آخر.");
+                    setFormData({...formData, expectedDeliveryDate: ''});
+                  } else {
+                    setFormData({...formData, expectedDeliveryDate: e.target.value});
+                  }
+                }} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" 
+              />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم بطاقة العمل</label>
@@ -163,7 +178,24 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">نوع السيارة*</label>
-              <input type="text" required value={formData.vehicle.type} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" />
+              <select 
+                required 
+                value={formData.vehicle.type} 
+                onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})} 
+                className="w-full border rounded p-2 text-right font-bold print:appearance-none print:border-none print:p-0 print:text-[10px]"
+              >
+                <option value="">اختر النوع</option>
+                {CAR_MANUFACTURERS.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="أخرى">أخرى</option>
+              </select>
+              {formData.vehicle.type === 'أخرى' && (
+                <input 
+                  type="text" 
+                  placeholder="أدخل نوع السيارة" 
+                  className="w-full border rounded p-2 mt-2 text-right font-bold no-print"
+                  onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})}
+                />
+              )}
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">الموديل*</label>
@@ -205,18 +237,48 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
 
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
           <div className="flex justify-between items-center border-b pb-2 print:pb-0"><h2 className="text-lg font-bold text-blue-900 print:text-xs">الطلبات والأعطال</h2><button type="button" onClick={addClaim} className="text-blue-600 text-sm font-bold no-print">+ إضافة طلب</button></div>
-          <div className="space-y-2 print:space-y-0">{formData.claims.map((claim, idx) => (
-            <div key={claim.id} className="flex gap-2 items-center no-print">
-              <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2">✕</button>
-              <input type="number" required value={claim.cost === 0 ? '' : claim.cost} onChange={e => updateClaim(idx, 'cost', parseFloat(e.target.value) || 0)} className="w-24 border rounded p-2 text-center" placeholder="السعر" />
-              <input type="text" required value={claim.description} onChange={e => updateClaim(idx, 'description', e.target.value)} className="flex-grow border rounded p-2 text-right" placeholder="وصف العطل أو الطلب" />
+          <div className="space-y-2 print:space-y-0">
+            <div className="flex gap-2 items-center font-bold text-gray-600 border-b pb-2 no-print">
+              <div className="w-10"></div>
+              <div className="w-24 text-center">التكلفة</div>
+              <div className="flex-grow text-right">وصف العطل / الطلب</div>
             </div>
-          ))}</div>
-          <div className="hidden print:block">{formData.claims.map((c, i) => <div key={i} className="flex justify-between border-b py-1 text-[10px]"><span>{c.cost} {RIYAL_SYMBOL}</span><span className="text-right">{c.description}</span></div>)}</div>
+            {formData.claims.map((claim, idx) => (
+              <div key={claim.id} className="flex gap-2 items-center no-print">
+                <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2 w-10">✕</button>
+                <input type="number" required value={claim.cost === 0 ? '' : claim.cost} onChange={e => updateClaim(idx, 'cost', parseFloat(e.target.value) || 0)} className="w-24 border rounded p-2 text-left" placeholder="0.00" />
+                <input type="text" required value={claim.description} onChange={e => updateClaim(idx, 'description', e.target.value)} className="flex-grow border rounded p-2 text-right" placeholder="وصف العطل أو الطلب" />
+              </div>
+            ))}
+          </div>
+          <div className="hidden print:block">
+            <div className="flex justify-between border-b-2 border-gray-800 py-1 text-[10px] font-bold">
+              <span className="w-20 text-left">التكلفة</span>
+              <span className="flex-grow text-right">وصف العطل / الطلب</span>
+            </div>
+            {formData.claims.map((c, i) => (
+              <div key={i} className="flex justify-between border-b py-1 text-[10px]">
+                <span className="w-20 text-left">{c.cost.toFixed(2)} {RIYAL_SYMBOL}</span>
+                <span className="flex-grow text-right">{c.description}</span>
+              </div>
+            ))}
+          </div>
           <div className="pt-4 space-y-2 border-t">
-            <div className="flex justify-between text-gray-600 print:text-[10px]"><span>{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span><span>المجموع:</span></div>
-            <div className="flex justify-between items-center no-print"><input type="number" className="w-20 border rounded p-1 text-center font-bold" value={formData.discountPercent === 0 ? '' : formData.discountPercent} onChange={e => setFormData({...formData, discountPercent: parseFloat(e.target.value) || 0})} /><span>الخصم (%):</span></div>
-            <div className="flex justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0"><span>{total.toFixed(2)} {RIYAL_SYMBOL}</span><span>الإجمالي النهائي:</span></div>
+            <div className="flex justify-between text-gray-600 print:text-[10px]">
+              <span className="font-bold w-24 text-left">{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span>
+              <span className="font-bold flex-grow text-right">المجموع الفرعي:</span>
+            </div>
+            <div className="flex justify-between items-center no-print">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">%</span>
+                <input type="number" className="w-20 border rounded p-1 text-left font-bold" value={formData.discountPercent === 0 ? '' : formData.discountPercent} onChange={e => setFormData({...formData, discountPercent: parseFloat(e.target.value) || 0})} />
+              </div>
+              <span className="font-bold">الخصم:</span>
+            </div>
+            <div className="flex justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0">
+              <span className="w-24 text-left">{total.toFixed(2)} {RIYAL_SYMBOL}</span>
+              <span className="flex-grow text-right">الإجمالي النهائي:</span>
+            </div>
           </div>
         </section>
 
@@ -236,10 +298,45 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
           </div>
         </section>
 
-        <div className="no-print space-y-6">
-          <div className="flex items-center gap-4 justify-end"><label htmlFor="terms" className="font-bold cursor-pointer">أقر بالموافقة على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 underline font-black">الشروط والأحكام</button></label><input type="checkbox" id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="w-7 h-7 accent-blue-600" /></div>
-          {(formData.termsAccepted || isEditing) && (<div className="text-right"><label className="block font-bold mb-4 text-lg">توقيع العميل:</label><SignaturePad onSave={sig => setFormData({...formData, signature: sig})} disabled={isEditing} /></div>)}
-        </div>
+        <section className="bg-blue-50 p-6 rounded-xl border-2 border-blue-100 space-y-4 print:p-2 print:bg-white print:border-gray-200">
+          <h2 className="text-lg font-bold border-b border-blue-200 pb-2 text-blue-900 print:text-[10px] print:pb-1">ملخص العقد والموافقة</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm print:text-[9px] print:gap-1">
+            <div className="space-y-1">
+              <p><span className="font-bold">اسم العميل:</span> {formData.customer.fullName || '---'}</p>
+              <p><span className="font-bold">نوع السيارة:</span> {formData.vehicle.type} {formData.vehicle.model}</p>
+            </div>
+            <div className="space-y-1">
+              <p><span className="font-bold">رقم اللوحة:</span> {formData.vehicle.plateLetters} {formData.vehicle.plateNumbers}</p>
+              <p><span className="font-bold">المبلغ المتفق عليه:</span> {total.toFixed(2)} {RIYAL_SYMBOL}</p>
+            </div>
+          </div>
+          
+          <div className="pt-4 no-print">
+            <div className="flex items-center gap-4 justify-end">
+              <label htmlFor="terms" className="font-bold cursor-pointer text-lg">
+                أقر بالموافقة على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 underline font-black">الشروط والأحكام</button>
+              </label>
+              <input 
+                type="checkbox" 
+                id="terms" 
+                checked={formData.termsAccepted} 
+                onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} 
+                className="w-8 h-8 accent-blue-600 cursor-pointer" 
+              />
+            </div>
+          </div>
+
+          <div className="hidden print:block pt-2">
+            <p className="text-[9px] font-bold">أقر أنا الموقع أدناه بموافقتي على الشروط والأحكام المذكورة أعلاه وعلى إجمالي المبلغ المتفق عليه.</p>
+          </div>
+
+          {(formData.termsAccepted || isEditing) && (
+            <div className="text-right pt-4">
+              <label className="block font-bold mb-4 text-lg print:text-[10px] print:mb-1">توقيع العميل:</label>
+              <SignaturePad onSave={sig => setFormData({...formData, signature: sig})} disabled={isEditing} />
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 no-print shadow-2xl z-40">
