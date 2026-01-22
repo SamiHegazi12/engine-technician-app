@@ -82,9 +82,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
   };
 
   const handlePlateLettersChange = (val: string) => {
-    // Remove non-Arabic characters and limit to 3 letters
     const cleaned = val.replace(/[^\u0600-\u06FF]/g, '').slice(0, 3);
-    // Automatically add spaces between letters for Saudi plates
     const formatted = cleaned.split('').join(' ').trim();
     setFormData({ ...formData, vehicle: { ...formData.vehicle, plateLetters: formatted } });
   };
@@ -132,6 +130,24 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
       </div>
 
       <div className="grid grid-cols-1 gap-6 print:gap-1">
+        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+          <h2 className="text-lg font-bold border-b pb-2 mb-2 text-blue-900 print:text-xs print:mb-0 print:pb-0">بيانات عقد الإصلاح</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ الإنشاء</label>
+              <input type="text" value={new Date(formData.createdAt).toLocaleString('en-GB')} disabled className="w-full bg-gray-50 border rounded p-2 text-right text-gray-500 print:bg-white print:border-none print:p-0 print:text-[10px]" />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ التسليم*</label>
+              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => setFormData({...formData, expectedDeliveryDate: e.target.value})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم بطاقة العمل</label>
+              <input type="text" value={formData.jobCardNumber} onChange={e => setFormData({...formData, jobCardNumber: e.target.value})} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" placeholder="أدخل الرقم" />
+            </div>
+          </div>
+        </section>
+
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
           <div className="flex justify-between items-center border-b pb-2 print:pb-0">
             <h2 className="text-lg font-bold text-blue-900 print:text-xs">بيانات المركبة</h2>
