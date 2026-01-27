@@ -38,60 +38,17 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
 
   const [showTerms, setShowTerms] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [carSearch, setCarSearch] = useState('');
-  const [showCarList, setShowCarList] = useState(false);
-
-  const compressImage = (base64: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = base64;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Handle orientation if needed (basic resize here)
-        if (width > maxWidth) {
-          height = (maxWidth / width) * height;
-          width = maxWidth;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error("Could not get canvas context"));
-          return;
-        }
-        
-        // Fill white background for JPEGs
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl.split(',')[1]);
-      };
-      img.onerror = (e) => reject(e);
-    });
-  };
 
   const handleVINScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    // Reset input so same file can be picked again
-    e.target.value = '';
-    
     setIsScanning(true);
     const reader = new FileReader();
     reader.onload = async () => {
       try {
         const resultStr = reader.result as string;
-        // For OCR, we need better quality than general photos
-        const compressedBase64 = await compressImage(resultStr, 1200, 0.85);
-        const result = await extractVehicleInfoFromImage(compressedBase64);
+        const base64 = resultStr.split(',')[1];
+        const result = await extractVehicleInfoFromImage(base64);
         if (result && Object.values(result).some(v => v !== null)) {
           setFormData(prev => ({
             ...prev,
@@ -159,10 +116,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
     if (!files) return;
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = async () => {
-        const compressed = await compressImage(reader.result as string, 800, 0.6);
-        setFormData(prev => ({ ...prev, photos: [...prev.photos, `data:image/jpeg;base64,${compressed}`] }));
-      };
+      reader.onload = () => { setFormData(prev => ({ ...prev, photos: [...prev.photos, reader.result as string] })); };
       reader.readAsDataURL(file);
     });
   };
@@ -210,77 +164,35 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
         </section>
 
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 print:pb-0 gap-2">
+          <div className="flex justify-between items-center border-b pb-2 print:pb-0">
             <h2 className="text-lg font-bold text-blue-900 print:text-xs">بيانات المركبة</h2>
-            <div className="flex gap-2 no-print">
-              <label className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}>
-                {isScanning ? 'جاري المسح...' : '📷 كاميرا'}
-                <input type="file" accept="image/*" capture="environment" onChange={handleVINScan} className="hidden" disabled={isScanning} />
-              </label>
-              <label className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white`}>
-                {isScanning ? '...' : '📁 رفع صورة'}
-                <input type="file" accept="image/*" onChange={handleVINScan} className="hidden" disabled={isScanning} />
-              </label>
-            </div>
+            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white no-print`}>
+              {isScanning ? 'جاري المسح...' : '📷 مسح الاستمارة ذكياً'}
+              <input type="file" accept="image/*" capture="environment" onChange={handleVINScan} className="hidden" disabled={isScanning} />
+            </label>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الشاصي (VIN)*</label>
               <input type="text" required maxLength={17} value={formData.vehicle.vin} onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, vin: e.target.value.toUpperCase()}})} className="w-full border rounded p-2 text-left font-mono font-bold print:border-none print:p-0 print:text-[10px]" />
             </div>
-            <div className="text-right relative">
+            <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">نوع السيارة*</label>
-              <div className="no-print">
-                <div 
-                  onClick={() => setShowCarList(!showCarList)}
-                  className="w-full border rounded p-2 text-right font-bold cursor-pointer bg-white flex justify-between items-center"
-                >
-                  <span className="text-gray-400 text-xs">▼</span>
-                  <span>{formData.vehicle.type || 'اختر النوع'}</span>
-                </div>
-                
-                {showCarList && (
-                  <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow-xl overflow-hidden flex flex-col max-h-64">
-                    <input 
-                      type="text"
-                      placeholder="بحث عن شركة..."
-                      className="p-2 border-b text-right outline-none focus:bg-blue-50"
-                      value={carSearch}
-                      onChange={(e) => setCarSearch(e.target.value)}
-                      autoFocus
-                    />
-                    <div className="overflow-y-auto">
-                      {['أخرى', ...CAR_MANUFACTURERS]
-                        .filter(m => m.includes(carSearch))
-                        .map(m => (
-                          <div 
-                            key={m}
-                            className="p-2 hover:bg-blue-600 hover:text-white cursor-pointer text-right border-b last:border-none"
-                            onClick={() => {
-                              setFormData({...formData, vehicle: {...formData.vehicle, type: m}});
-                              setShowCarList(false);
-                              setCarSearch('');
-                            }}
-                          >
-                            {m}
-                          </div>
-                        ))
-                      }
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="hidden print:block border rounded p-2 text-right font-bold text-[10px]">
-                {formData.vehicle.type}
-              </div>
-
+              <select 
+                required 
+                value={formData.vehicle.type} 
+                onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})} 
+                className="w-full border rounded p-2 text-right font-bold print:appearance-none print:border-none print:p-0 print:text-[10px]"
+              >
+                <option value="">اختر النوع</option>
+                {CAR_MANUFACTURERS.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="أخرى">أخرى</option>
+              </select>
               {formData.vehicle.type === 'أخرى' && (
                 <input 
                   type="text" 
-                  placeholder="أدخل نوع السيارة يدوياً" 
+                  placeholder="أدخل نوع السيارة" 
                   className="w-full border rounded p-2 mt-2 text-right font-bold no-print"
-                  value={formData.vehicle.type === 'أخرى' ? '' : formData.vehicle.type}
                   onChange={e => setFormData({...formData, vehicle: {...formData.vehicle, type: e.target.value}})}
                 />
               )}

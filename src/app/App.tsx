@@ -91,37 +91,31 @@ const App: React.FC = () => {
   }, []);
 
   const handleSave = async (data: RepairAgreement) => {
-    try {
-      const payload = {
-        id: data.id,
-        serial_number: data.serialNumber,
-        created_at: data.createdAt,
-        expected_delivery_date: data.expectedDeliveryDate,
-        job_card_number: data.jobCardNumber || null,
-        vehicle: data.vehicle,
-        customer: data.customer,
-        claims: data.claims,
-        discount_percent: data.discountPercent,
-        photos: data.photos,
-        signature: data.signature || null,
-        status: data.status,
-        terms_accepted: data.termsAccepted
-      };
+    const payload = {
+      id: data.id,
+      serial_number: data.serialNumber,
+      created_at: data.createdAt,
+      expected_delivery_date: data.expectedDeliveryDate,
+      job_card_number: data.jobCardNumber,
+      vehicle: data.vehicle,
+      customer: data.customer,
+      claims: data.claims,
+      discount_percent: data.discountPercent,
+      photos: data.photos,
+      signature: data.signature,
+      status: data.status,
+      terms_accepted: data.termsAccepted
+    };
 
-      console.log('Saving payload to Supabase:', payload);
-      const { error, status, statusText } = await supabase.from('repair_agreements').upsert(payload);
+    const { error } = await supabase.from('repair_agreements').upsert(payload);
 
-      if (error) {
-        console.error('Supabase Error:', error, 'Status:', status, statusText);
-        throw new Error(error.message || 'Database connection error');
-      }
-
+    if (error) {
+      console.error('Error saving agreement:', error);
+      alert('حدث خطأ أثناء حفظ العقد. يرجى المحاولة مرة أخرى.');
+    } else {
       await fetchAgreements();
       setView('CONTROL_PANEL');
       setEditingId(null);
-    } catch (err: any) {
-      console.error('Save failed:', err);
-      alert(`Error saving agreement: ${err.message || 'Unknown error'}. Please check your internet connection and try again.`);
     }
   };
 
