@@ -35,7 +35,8 @@ const App: React.FC = () => {
         photos: item.photos,
         signature: item.signature,
         status: item.status as RepairStatus,
-        termsAccepted: item.terms_accepted
+        termsAccepted: item.terms_accepted,
+        repairAgreementLink: item.repair_agreement_link
       }));
       setAgreements(mappedData);
     }
@@ -65,7 +66,8 @@ const App: React.FC = () => {
               photos: agreement.photos,
               signature: agreement.signature,
               status: agreement.status,
-              terms_accepted: agreement.termsAccepted
+              terms_accepted: agreement.termsAccepted,
+              repair_agreement_link: agreement.repairAgreementLink
             });
           }
           localStorage.removeItem('repair_history');
@@ -91,31 +93,38 @@ const App: React.FC = () => {
   }, []);
 
   const handleSave = async (data: RepairAgreement) => {
-    const payload = {
-      id: data.id,
-      serial_number: data.serialNumber,
-      created_at: data.createdAt,
-      expected_delivery_date: data.expectedDeliveryDate,
-      job_card_number: data.jobCardNumber,
-      vehicle: data.vehicle,
-      customer: data.customer,
-      claims: data.claims,
-      discount_percent: data.discountPercent,
-      photos: data.photos,
-      signature: data.signature,
-      status: data.status,
-      terms_accepted: data.termsAccepted
-    };
+    try {
+      const payload = {
+        id: data.id,
+        serial_number: data.serialNumber,
+        created_at: data.createdAt,
+        expected_delivery_date: data.expected_delivery_date,
+        job_card_number: data.jobCardNumber || null,
+        vehicle: data.vehicle,
+        customer: data.customer,
+        claims: data.claims,
+        discount_percent: data.discountPercent,
+        photos: data.photos,
+        signature: data.signature || null,
+        status: data.status,
+        terms_accepted: data.termsAccepted,
+        repair_agreement_link: data.repairAgreementLink || null
+      };
 
-    const { error } = await supabase.from('repair_agreements').upsert(payload);
+      console.log('Saving payload to Supabase:', payload);
+      const { error, status, statusText } = await supabase.from('repair_agreements').upsert(payload);
 
-    if (error) {
-      console.error('Error saving agreement:', error);
-      alert('حدث خطأ أثناء حفظ العقد. يرجى المحاولة مرة أخرى.');
-    } else {
+      if (error) {
+        console.error('Supabase Error:', error, 'Status:', status, statusText);
+        throw new Error(error.message || 'Database connection error');
+      }
+
       await fetchAgreements();
       setView('CONTROL_PANEL');
       setEditingId(null);
+    } catch (err: any) {
+      console.error('Save failed:', err);
+      alert(`Error saving agreement: ${err.message || 'Unknown error'}. Please check your internet connection and try again.`);
     }
   };
 
@@ -133,7 +142,7 @@ const App: React.FC = () => {
   };
 
   const currentYear = new Date().getFullYear();
-  const yearlyCount = agreements.filter(a => a.serialNumber.startsWith(currentYear.toString())).length;
+  const yearlyCount = agreements.filter(a => a.serialNumber && a.serialNumber.startsWith(currentYear.toString())).length;
 
   return (
     <div className="min-h-screen">
@@ -148,8 +157,8 @@ const App: React.FC = () => {
         top: 0,
         zIndex: 9999,
         borderBottom: '1px solid white'
-      }}>
-        v5.0 - CLOUD SYNC ACTIVE (Supabase)
+      }} className="no-print">
+        v5.5 - CLOUD SYNC ACTIVE (Supabase)
       </div>
       
       {loading ? (
@@ -161,7 +170,7 @@ const App: React.FC = () => {
           {view === 'CONTROL_PANEL' && (
             <ControlPanel 
               agreements={agreements} 
-              onNew={() => setView('NEW_AGREEMENT')} 
+              onNew={() => { setEditingId(null); setView('NEW_AGREEMENT'); }} 
               onEdit={(id) => { setEditingId(id); setView('EDIT_AGREEMENT'); }} 
               onStatusChange={handleStatusChange} 
             />

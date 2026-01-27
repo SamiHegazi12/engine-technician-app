@@ -44,4 +44,5 @@ export interface RepairAgreement {
   signature?: string;
   status: RepairStatus;
   termsAccepted: boolean;
+  repairAgreementLink?: string;
 }

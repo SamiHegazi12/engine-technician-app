@@ -28,7 +28,9 @@ export default async function handler(req, res) {
       "google/gemini-2.0-flash-001",
       "google/gemini-1.5-flash",
       "google/gemini-1.5-pro",
-      "meta-llama/llama-3.2-11b-vision-instruct:free"
+      "google/gemini-2.0-flash-lite-preview-02-05:free",
+      "meta-llama/llama-3.2-11b-vision-instruct:free",
+      "qwen/qwen-2-vl-7b-instruct:free"
     ];
 
     let lastError = null;
@@ -114,8 +116,8 @@ export default async function handler(req, res) {
         lastError = { message: e.message };
       }
       
-      // Delay 1 second before retrying next model
-      await new Promise(r => setTimeout(r, 1000));
+      // Delay 0.5 second before retrying next model
+      await new Promise(r => setTimeout(r, 500));
     }
 
     // If all models fail

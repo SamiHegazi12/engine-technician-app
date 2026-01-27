@@ -10,10 +10,7 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Remove NOT NULL constraint from 'expected_delivery_date' to prevent errors when it's empty
-ALTER TABLE repair_agreements ALTER COLUMN expected_delivery_date DROP NOT NULL;
-
--- 3. Ensure all other columns are present (Full schema for reference)
+-- 2. Ensure all other columns are present (Full schema for reference)
 /*
 CREATE TABLE IF NOT EXISTS repair_agreements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,3 +29,6 @@ CREATE TABLE IF NOT EXISTS repair_agreements (
     repair_agreement_link TEXT
 );
 */
+
+-- 3. Refresh the PostgREST schema cache (Supabase does this automatically, but good to keep in mind)
+-- If the error persists, try running: NOTIFY pgrst, 'reload schema';

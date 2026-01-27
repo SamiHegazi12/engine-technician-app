@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS repair_agreements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     serial_number TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    expected_delivery_date TEXT, -- Nullable to avoid constraint errors
+    expected_delivery_date TEXT,
     job_card_number TEXT,
     vehicle JSONB NOT NULL,
     customer JSONB NOT NULL,
