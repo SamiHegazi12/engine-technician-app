@@ -426,11 +426,12 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
 
             <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-none print:p-0">
-              <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px]">توقيع العميل</label>
+              <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px]">توقيع العميل (موافق على الشروط)</label>
               <div className="bg-white border rounded-lg overflow-hidden print:border-none">
                 <SignaturePad
                   value={formData.signature || ''}
                   onChange={sig => setFormData({...formData, signature: sig})}
+                  disabled={isEditing}
                 />
               </div>
             </div>

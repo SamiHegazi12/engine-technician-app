@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 interface SignaturePadProps {
-  onSave: (dataUrl: string) => void;
+  value?: string;
+  onChange: (dataUrl: string) => void;
   disabled?: boolean;
 }
 
-const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+const SignaturePad: React.FC<SignaturePadProps> = ({ value, onChange, disabled }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -14,6 +15,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
@@ -23,7 +25,15 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
     ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-  }, []);
+
+    if (value) {
+      const img = new Image();
+      img.src = value;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    }
+  }, [value]);
 
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -62,7 +72,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
     if (!isDrawing) return;
     setIsDrawing(false);
     if (canvasRef.current) {
-      onSave(canvasRef.current.toDataURL());
+      onChange(canvasRef.current.toDataURL());
     }
   };
 
@@ -74,7 +84,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const dpr = window.devicePixelRatio || 1;
       ctx.scale(dpr, dpr);
-      onSave('');
+      onChange('');
     }
   };
 
@@ -82,7 +92,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
     <div className="relative w-full">
       <canvas
         ref={canvasRef}
-        className="signature-pad w-full h-[220px] border border-gray-300 rounded-lg bg-white touch-none cursor-crosshair shadow-inner"
+        className={`signature-pad w-full h-[220px] border border-gray-300 rounded-lg bg-white touch-none shadow-inner ${disabled ? 'cursor-default' : 'cursor-crosshair'}`}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}

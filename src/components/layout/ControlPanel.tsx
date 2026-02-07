@@ -122,6 +122,16 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
                   <span className="font-medium">{agreement.jobCardNumber || '---'}</span>
                 </div>
               </div>
+
+              {agreement.signature && (
+                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                  <p className="text-[10px] text-gray-400 mb-1 text-right">توقيع العميل (موافق على الشروط)</p>
+                  <div className="bg-white rounded border h-16 flex items-center justify-center overflow-hidden">
+                    <img src={agreement.signature} alt="Customer Signature" className="max-h-full object-contain" />
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center pt-2">
                 <span className="text-lg font-bold text-green-600">
                   {total.toFixed(2)} <span className="text-[10px] text-gray-400">{RIYAL_SYMBOL}</span>
