@@ -1,0 +1,147 @@
+diff --git a/src/components/layout/ControlPanel.tsx b/src/components/layout/ControlPanel.tsx
+index c7b6a4c..0f58a2c 100644
+--- a/src/components/layout/ControlPanel.tsx
++++ b/src/components/layout/ControlPanel.tsx
+@@ -122,6 +122,15 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
+                   <span className="font-medium">{agreement.jobCardNumber || '---'}</span>
+                 </div>
+               </div>
++              {agreement.signature && (
++                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
++                  <p className="text-[10px] text-gray-400 mb-1 text-right">توقيع العميل (موافق على الشروط)</p>
++                  <div className="bg-white rounded border h-16 flex items-center justify-center overflow-hidden">
++                    <img src={agreement.signature} alt="Customer Signature" className="max-h-full object-contain" />
++                  </div>
++                </div>
++              )}
++
+               <div className="flex justify-between items-center pt-2">
+                 <span className="text-lg font-bold text-green-600">
+                   {total.toFixed(2)} <span className="text-[10px] text-gray-400">{RIYAL_SYMBOL}</span>
+diff --git a/src/components/ui/SignaturePad.tsx b/src/components/ui/SignaturePad.tsx
+index 106a316..db61067 100644
+--- a/src/components/ui/SignaturePad.tsx
++++ b/src/components/ui/SignaturePad.tsx
+@@ -1,11 +1,12 @@
+ import React, { useRef, useEffect, useState } from 'react';
+ 
+ interface SignaturePadProps {
+-  onSave: (dataUrl: string) => void;
++  value?: string;
++  onChange: (dataUrl: string) => void;
+   disabled?: boolean;
+ }
+ 
+-const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
++const SignaturePad: React.FC<SignaturePadProps> = ({ value, onChange, disabled }) => {
+   const canvasRef = useRef<HTMLCanvasElement>(null);
+   const [isDrawing, setIsDrawing] = useState(false);
+ 
+@@ -14,6 +15,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+     if (!canvas) return;
+     const ctx = canvas.getContext('2d');
+     if (!ctx) return;
++    
+     const dpr = window.devicePixelRatio || 1;
+     const rect = canvas.getBoundingClientRect();
+     canvas.width = rect.width * dpr;
+@@ -23,7 +25,15 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+     ctx.lineWidth = 3;
+     ctx.lineJoin = 'round';
+     ctx.lineCap = 'round';
+-  }, []);
++
++    if (value) {
++      const img = new Image();
++      img.src = value;
++      img.onload = () => {
++        ctx.drawImage(img, 0, 0, rect.width, rect.height);
++      };
++    }
++  }, [value]);
+ 
+   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+     const canvas = canvasRef.current;
+@@ -62,7 +72,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+     if (!isDrawing) return;
+     setIsDrawing(false);
+     if (canvasRef.current) {
+-      onSave(canvasRef.current.toDataURL());
++      onChange(canvasRef.current.toDataURL());
+     }
+   };
+ 
+@@ -74,7 +84,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       const dpr = window.devicePixelRatio || 1;
+       ctx.scale(dpr, dpr);
+-      onSave('');
++      onChange('');
+     }
+   };
+ 
+@@ -82,7 +92,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+     <div className="relative w-full">
+       <canvas
+         ref={canvasRef}
+-        className="signature-pad w-full h-[220px] border border-gray-300 rounded-lg bg-white touch-none cursor-crosshair shadow-inner"
++        className={`signature-pad w-full h-[220px] border border-gray-300 rounded-lg bg-white touch-none shadow-inner ${disabled ? 'cursor-default' : 'cursor-crosshair'}`}
+         onMouseDown={startDrawing}
+         onMouseMove={draw}
+         onMouseUp={stopDrawing}
+@@ -104,4 +114,4 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, disabled }) => {
+   );
+ };
+ 
+-export default SignaturePad;
+\ No newline at end of file
++export default SignaturePad;
+diff --git a/src/features/agreements/RepairAgreementForm.tsx b/src/features/agreements/RepairAgreementForm.tsx
+index a5c2ed5..f4ad42a 100644
+--- a/src/features/agreements/RepairAgreementForm.tsx
++++ b/src/features/agreements/RepairAgreementForm.tsx
+@@ -22,7 +22,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+ 
+   const [formData, setFormData] = useState<RepairAgreement>(initialData || {
+     id: crypto.randomUUID(),
+-    serialNumber: generateSerial(),
++    serialNumber: initialData ? initialData.serialNumber : generateSerial(),
+     createdAt: new Date().toISOString(),
+     expectedDeliveryDate: '',
+     jobCardNumber: '',
+@@ -425,20 +425,26 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+               </label>
+             </div>
+ 
+-            <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-none print:p-0">
+-              <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px]">توقيع العميل</label>
+-              <div className="bg-white border rounded-lg overflow-hidden print:border-none">
+-                <SignaturePad
+-                  value={formData.signature || ''}
+-                  onChange={sig => setFormData({...formData, signature: sig})}
+-                />
++            {(formData.termsAccepted || isEditing) && (
++              <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-gray-300 print:p-2">
++                <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px] print:mb-1">توقيع العميل (موافق على الشروط)</label>
++                <div className="bg-white border rounded-lg overflow-hidden print:border-gray-400">
++                  <SignaturePad
++                    value={formData.signature || ''}
++                    onChange={sig => setFormData({...formData, signature: sig})}
++                    disabled={isEditing}
++                  />
++                </div>
+               </div>
+-            </div>
++            )}
+           </div>
+         </section>
+       </div>
+ 
+-      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-4 no-print z-40">
++      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-2 no-print z-40">
++        <button type="button" onClick={onBack} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all flex items-center gap-2">
++          <span>→</span> عودة
++        </button>
+         <button type="submit" className="flex-grow bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all">حفظ الإتفاقية</button>
+         <button type="button" onClick={() => window.print()} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all">طباعة</button>
+         {isEditing && (
