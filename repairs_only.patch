@@ -1,0 +1,341 @@
+diff --git a/src/features/agreements/RepairAgreementForm.tsx b/src/features/agreements/RepairAgreementForm.tsx
+index a83f01a..a5c2ed5 100644
+--- a/src/features/agreements/RepairAgreementForm.tsx
++++ b/src/features/agreements/RepairAgreementForm.tsx
+@@ -14,10 +14,10 @@ interface Props {
+ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agreementsCount = 0 }) => {
+   const isEditing = !!initialData;
+   const currentYear = new Date().getFullYear().toString();
+-  
++
+   const generateSerial = () => {
+     const count = (agreementsCount + 1).toString().padStart(4, '0');
+-    return `${currentYear}${count}`; 
++    return `${currentYear}${count}`;
+   };
+ 
+   const [formData, setFormData] = useState<RepairAgreement>(initialData || {
+@@ -95,12 +95,12 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+         if (result && Object.values(result).some(v => v !== null)) {
+           setFormData(prev => ({
+             ...prev,
+-            vehicle: { 
+-              ...prev.vehicle, 
+-              vin: result.vin?.toUpperCase() || prev.vehicle.vin, 
+-              type: result.brand || prev.vehicle.type, 
+-              model: result.model?.toUpperCase() || prev.vehicle.model, 
+-              year: result.year ? arabicToEnglish(result.year) : prev.vehicle.year, 
++            vehicle: {
++              ...prev.vehicle,
++              vin: result.vin?.toUpperCase() || prev.vehicle.vin,
++              type: result.brand || prev.vehicle.type,
++              model: result.model?.toUpperCase() || prev.vehicle.model,
++              year: result.year ? arabicToEnglish(result.year) : prev.vehicle.year,
+               color: result.color || prev.vehicle.color,
+               plateNumbers: result.plateNumbers ? arabicToEnglish(result.plateNumbers) : prev.vehicle.plateNumbers,
+               plateLetters: result.plateLetters || prev.vehicle.plateLetters
+@@ -181,7 +181,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+           section { page-break-inside: avoid; margin-bottom: 5px !important; }
+         }
+       `}} />
+-      
++
+       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm no-print">
+         <button type="button" onClick={onBack} className="text-gray-600 flex items-center gap-2 font-bold"><span>→</span> عودة</button>
+         <h1 className="text-xl font-bold text-blue-900">إتفاقية إصلاح</h1>
+@@ -198,11 +198,11 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+             </div>
+             <div className="text-right">
+               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ التسليم*</label>
+-              <input 
+-                type="date" 
+-                required 
+-                min={new Date().toISOString().split('T')[0]} 
+-                value={formData.expectedDeliveryDate} 
++              <input
++                type="date"
++                required
++                min={new Date().toISOString().split('T')[0]}
++                value={formData.expectedDeliveryDate}
+                 onChange={e => {
+                   const date = new Date(e.target.value);
+                   if (date.getDay() === 5) {
+@@ -211,8 +211,8 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+                   } else {
+                     setFormData({...formData, expectedDeliveryDate: e.target.value});
+                   }
+-                }} 
+-                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" 
++                }}
++                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]"
+               />
+             </div>
+             <div className="text-right">
+@@ -227,7 +227,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+             <h2 className="text-lg font-bold text-blue-900 print:text-xs">بيانات المركبة</h2>
+             <div className="flex gap-2 no-print">
+               <label className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}>
+-                {isScanning ? 'جاري المسح...' : '📷 كاميرا'}
++                {isScanning ? 'جاري المسح...' : '📷 مسح VIN'}
+                 <input type="file" accept="image/*" capture="environment" onChange={handleVINScan} className="hidden" disabled={isScanning} />
+               </label>
+               <label className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all shadow-md ${isScanning ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white`}>
+@@ -240,17 +240,17 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+             <div className="text-right relative">
+               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">نوع السيارة*</label>
+               <div className="no-print">
+-                <div 
++                <div
+                   onClick={() => setShowCarList(!showCarList)}
+                   className="w-full border rounded p-2 text-right font-bold cursor-pointer bg-white flex justify-between items-center"
+                 >
+                   <span className="text-gray-400 text-xs">▼</span>
+                   <span>{formData.vehicle.type || 'اختر النوع'}</span>
+                 </div>
+-                
++
+                 {showCarList && (
+                   <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow-xl overflow-hidden flex flex-col max-h-64">
+-                    <input 
++                    <input
+                       type="text"
+                       placeholder="بحث عن شركة..."
+                       className="p-2 border-b text-right outline-none focus:bg-blue-50"
+@@ -262,7 +262,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+                       {['أخرى', ...CAR_MANUFACTURERS]
+                         .filter(m => m.includes(carSearch))
+                         .map(m => (
+-                          <div 
++                          <div
+                             key={m}
+                             className="p-2 hover:bg-blue-600 hover:text-white cursor-pointer text-right border-b last:border-none"
+                             onClick={() => {
+@@ -279,15 +279,15 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+                   </div>
+                 )}
+               </div>
+-              
++
+               <div className="hidden print:block border rounded p-2 text-right font-bold text-[10px]">
+                 {formData.vehicle.type}
+               </div>
+ 
+               {formData.vehicle.type === 'أخرى' && (
+-                <input 
+-                  type="text" 
+-                  placeholder="أدخل نوع السيارة يدوياً" 
++                <input
++                  type="text"
++                  placeholder="أدخل نوع السيارة يدوياً"
+                   className="w-full border rounded p-2 mt-2 text-right font-bold no-print"
+                   value={formData.vehicle.type === 'أخرى' ? '' : formData.vehicle.type}
+                   onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, type: e.target.value}}))}
+@@ -320,6 +320,18 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+                 <input type="text" required value={formData.vehicle.plateNumbers} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, plateNumbers: arabicToEnglish(e.target.value.replace(/\D/g, '')).slice(0, 4)}}))} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="أرقام" />
+               </div>
+             </div>
++            <div className="text-right">
++              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الهيكل (VIN)*</label>
++              <input
++                type="text"
++                required
++                maxLength={17}
++                value={formData.vehicle.vin}
++                onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, vin: e.target.value.toUpperCase()}}))}
++                className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]"
++                placeholder="أدخل رقم الهيكل"
++              />
++            </div>
+           </div>
+         </section>
+ 
+@@ -335,52 +347,52 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+           <div className="flex justify-between items-center border-b pb-2 print:pb-0"><h2 className="text-lg font-bold text-blue-900 print:text-xs">الطلبات والأعطال</h2><button type="button" onClick={addClaim} className="text-blue-600 text-sm font-bold no-print">+ إضافة طلب</button></div>
+           <div className="space-y-2 print:space-y-0">
+-            <div className="flex flex-row-reverse gap-2 items-center font-bold text-gray-600 border-b pb-2 no-print">
+-              <div className="w-10"></div>
++            <div className="flex gap-2 items-center font-bold text-gray-600 border-b pb-2 no-print">
+               <div className="flex-grow text-right">وصف العطل / الطلب</div>
+               <div className="w-24 text-center">التكلفة</div>
++              <div className="w-10"></div>
+             </div>
+             {formData.claims.map((claim, idx) => (
+-              <div key={claim.id} className="flex flex-row-reverse gap-2 items-center no-print">
+-                <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2 w-10">✕</button>
++              <div key={claim.id} className="flex gap-2 items-center no-print">
+                 <input type="text" required value={claim.description} onChange={e => updateClaim(idx, 'description', e.target.value)} className="flex-grow border rounded p-2 text-right" placeholder="وصف العطل أو الطلب" />
+                 <input type="number" required value={claim.cost === 0 ? '' : claim.cost} onChange={e => updateClaim(idx, 'cost', parseFloat(e.target.value) || 0)} className="w-24 border rounded p-2 text-left" placeholder="0.00" />
++                <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2 w-10">✕</button>
+               </div>
+             ))}
+           </div>
+           <div className="hidden print:block">
+-            <div className="flex flex-row-reverse justify-between border-b-2 border-gray-800 py-1 text-[10px] font-bold">
++            <div className="flex justify-between border-b-2 border-gray-800 py-1 text-[10px] font-bold">
+               <span className="flex-grow text-right">وصف العطل / الطلب</span>
+               <span className="w-20 text-left">التكلفة</span>
+             </div>
+             {formData.claims.map((c, i) => (
+-              <div key={i} className="flex flex-row-reverse justify-between border-b py-1 text-[10px]">
++              <div key={i} className="flex justify-between border-b py-1 text-[10px]">
+                 <span className="flex-grow text-right">{c.description}</span>
+                 <span className="w-20 text-left">{c.cost.toFixed(2)} {RIYAL_SYMBOL}</span>
+               </div>
+             ))}
+           </div>
+           <div className="pt-4 space-y-2 border-t">
+-            <div className="flex flex-row-reverse justify-between text-gray-600 print:text-[10px]">
+-              <span className="font-bold flex-grow text-right">المجموع الفرعي:</span>
++            <div className="flex justify-between text-gray-600 print:text-[10px]">
++              <span className="font-bold flex-grow text-left">المجموع الفرعي:</span>
+               <span className="font-bold w-24 text-left">{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span>
+             </div>
+-            
+-            <div className="flex flex-row-reverse justify-between items-center no-print">
+-              <span className="font-bold flex-grow text-right">الخصم:</span>
++
++            <div className="flex justify-between items-center no-print">
++              <span className="font-bold flex-grow text-left">الخصم:</span>
+               <div className="flex items-center gap-2 w-24">
+                 <input type="number" className="w-full border rounded p-1 text-left font-bold" value={formData.discountPercent === 0 ? '' : formData.discountPercent} onChange={e => setFormData(prev => ({...prev, discountPercent: parseFloat(e.target.value) || 0}))} />
+                 <span className="text-gray-500">%</span>
+               </div>
+             </div>
+-            
+-            <div className="hidden print:flex flex-row-reverse justify-between text-gray-600 text-[10px]">
+-              <span className="font-bold flex-grow text-right">الخصم:</span>
++
++            <div className="hidden print:flex justify-between text-gray-600 text-[10px]">
++              <span className="font-bold flex-grow text-left">الخصم:</span>
+               <span className="font-bold w-24 text-left">{formData.discountPercent}%</span>
+             </div>
+-            
+-            <div className="flex flex-row-reverse justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0">
+-              <span className="flex-grow text-right">الإجمالي النهائي:</span>
++
++            <div className="flex justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0">
++              <span className="flex-grow text-left">الإجمالي النهائي:</span>
+               <span className="w-24 text-left">{total.toFixed(2)} {RIYAL_SYMBOL}</span>
+             </div>
+           </div>
+@@ -395,82 +407,58 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
+                 <button type="button" onClick={() => setFormData(prev => ({...prev, photos: prev.photos.filter((_, i) => i !== idx)}))} className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center no-print">✕</button>
+               </div>
+             ))}
+-            <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 no-print">
+-              <span className="text-3xl text-gray-400">+</span>
+-              <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="hidden" />
++            <label className="border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 no-print">
++              <span className="text-2xl text-gray-400">+</span>
++              <span className="text-xs text-gray-500">إضافة صورة</span>
++              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+             </label>
+           </div>
+         </section>
+ 
+-        <section className="bg-blue-50 p-6 rounded-xl border-2 border-blue-100 space-y-4 print:p-2 print:bg-white print:border-gray-200">
+-          <h2 className="text-lg font-bold border-b border-blue-200 pb-2 text-blue-900 print:text-[10px] print:pb-1">ملخص الإتفاقية والموافقة</h2>
+-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm print:text-[9px] print:gap-1">
+-            <div className="space-y-1">
+-              <p><span className="font-bold">اسم العميل:</span> {formData.customer.fullName || '---'}</p>
+-              <p><span className="font-bold">نوع السيارة:</span> {formData.vehicle.type} {formData.vehicle.model}</p>
+-            </div>
+-            <div className="space-y-1">
+-              <p><span className="font-bold">المبلغ المتفق عليه:</span> {total.toFixed(2)} {RIYAL_SYMBOL}</p>
++        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
++          <h2 className="text-lg font-bold border-b pb-2 text-blue-900 print:text-xs print:pb-0 print:mb-0">التوقيع والموافقة</h2>
++          <div className="space-y-4">
++            <div className="flex items-start gap-2">
++              <input type="checkbox" id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="mt-1" />
++              <label htmlFor="terms" className="text-sm text-gray-600">
++                أوافق على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 font-bold underline">الشروط والأحكام</button> الخاصة بمركز تقني المحركات
++              </label>
+             </div>
+-          </div>
+-          
+-          <div className="flex flex-row-reverse items-center gap-4 bg-white p-4 rounded-xl border shadow-sm no-print">
+-            <input 
+-              type="checkbox" 
+-              id="terms" 
+-              checked={formData.termsAccepted} 
+-              onChange={e => setFormData(prev => ({...prev, termsAccepted: e.target.checked}))} 
+-              className="w-8 h-8 accent-blue-600 cursor-pointer" 
+-            />
+-            <label htmlFor="terms" className="font-bold cursor-pointer text-lg flex-grow text-right">
+-              أقر بالموافقة على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 underline font-black">الشروط والأحكام</button>
+-            </label>
+-          </div>
+ 
+-          <div className="hidden print:block pt-2">
+-            <div className="flex flex-row-reverse items-start gap-2">
+-              <div className="w-4 h-4 border border-black mt-1 flex-shrink-0">
+-                {formData.termsAccepted && <span className="block text-center leading-3">✓</span>}
++            <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-none print:p-0">
++              <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px]">توقيع العميل</label>
++              <div className="bg-white border rounded-lg overflow-hidden print:border-none">
++                <SignaturePad
++                  value={formData.signature || ''}
++                  onChange={sig => setFormData({...formData, signature: sig})}
++                />
+               </div>
+-              <p className="text-[9px] font-bold flex-grow text-right">أقر أنا الموقع أدناه بموافقتي على الشروط والأحكام المذكورة أعلاه وعلى إجمالي المبلغ المتفق عليه.</p>
+             </div>
+           </div>
+-
+-          {(formData.termsAccepted || isEditing) && (
+-            <div className="text-right pt-4">
+-              <label className="block font-bold mb-4 text-lg print:text-[10px] print:mb-1">توقيع العميل:</label>
+-              {formData.signature && (
+-                <div className="mb-4">
+-                  <img src={formData.signature} alt="Customer Signature" className="max-h-32 border rounded print:max-h-20" />
+-                </div>
+-              )}
+-              <div className="no-print">
+-                <SignaturePad onSave={sig => setFormData(prev => ({...prev, signature: sig}))} disabled={isEditing} />
+-              </div>
+-            </div>
+-          )}
+         </section>
+       </div>
+ 
+-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 no-print shadow-2xl z-40">
+-        <div className="max-w-4xl mx-auto flex flex-row-reverse gap-4">
+-          <button type="submit" className="flex-grow bg-green-600 text-white font-black py-4 rounded-xl shadow-xl text-xl transition-all active:scale-95 disabled:bg-gray-400" disabled={!formData.termsAccepted || !formData.signature}>حفظ الإتفاقية</button>
+-          {isEditing && (
+-            <>
+-              <button type="button" onClick={() => window.print()} className="px-8 bg-blue-600 text-white rounded-xl font-black shadow-lg">طباعة</button>
+-              <button type="button" onClick={handleWhatsAppShare} className="px-8 bg-green-500 text-white rounded-xl font-black shadow-lg">واتساب</button>
+-            </>
+-          )}
+-          <button type="button" onClick={onBack} className="px-8 border-2 border-gray-300 rounded-xl text-gray-600 font-bold">إغلاق</button>
+-        </div>
++      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-4 no-print z-40">
++        <button type="submit" className="flex-grow bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all">حفظ الإتفاقية</button>
++        <button type="button" onClick={() => window.print()} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all">طباعة</button>
++        {isEditing && (
++          <button type="button" onClick={handleWhatsAppShare} className="bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-green-700 transition-all">واتساب</button>
++        )}
+       </div>
+ 
+       {showTerms && (
+-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+-            <div className="p-5 border-b flex justify-between items-center bg-gray-50"><button onClick={() => setShowTerms(false)} className="text-2xl hover:text-red-500">✕</button><h3 className="font-black text-xl text-blue-900">الشروط والأحكام</h3></div>
+-            <div className="p-8 overflow-y-auto whitespace-pre-line text-right text-lg">{TERMS_AND_CONDITIONS}</div>
+-            <div className="p-6 bg-gray-50 border-t flex justify-center"><button onClick={() => { setFormData(prev => ({...prev, termsAccepted: true})); setShowTerms(false); }} className="bg-blue-600 text-white px-12 py-3 rounded-full font-black text-lg">قرأت وموافق</button></div>
++        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 no-print">
++          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
++            <div className="p-4 border-b flex justify-between items-center">
++              <h3 className="font-bold text-lg">الشروط والأحكام</h3>
++              <button onClick={() => setShowTerms(false)} className="text-gray-500 text-2xl">✕</button>
++            </div>
++            <div className="p-6 overflow-y-auto text-right whitespace-pre-wrap leading-relaxed text-gray-700">
++              {TERMS_AND_CONDITIONS}
++            </div>
++            <div className="p-4 border-t">
++              <button onClick={() => setShowTerms(false)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">إغلاق</button>
++            </div>
+           </div>
+         </div>
+       )}
