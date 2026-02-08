@@ -142,7 +142,12 @@ const App: React.FC = () => {
   };
 
   const currentYear = new Date().getFullYear();
-  const yearlyCount = agreements.filter(a => a.serialNumber && a.serialNumber.startsWith(currentYear.toString())).length;
+    const yearlyCount = agreements
+    .filter(a => a.serialNumber && a.serialNumber.startsWith(currentYear.toString()))
+    .reduce((max, a) => {
+      const num = parseInt(a.serialNumber.substring(4));
+      return isNaN(num) ? max : (num > max ? num : max);
+    }, 0);
 
   return (
     <div className="min-h-screen">

@@ -22,7 +22,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
 
   const [formData, setFormData] = useState<RepairAgreement>(initialData || {
     id: crypto.randomUUID(),
-    serialNumber: generateSerial(),
+    serialNumber: initialData ? initialData.serialNumber : generateSerial(),
     createdAt: new Date().toISOString(),
     expectedDeliveryDate: '',
     jobCardNumber: '',
@@ -425,21 +425,26 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
               </label>
             </div>
 
-            <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-none print:p-0">
-              <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px]">توقيع العميل (موافق على الشروط)</label>
-              <div className="bg-white border rounded-lg overflow-hidden print:border-none">
-                <SignaturePad
-                  value={formData.signature || ''}
-                  onChange={sig => setFormData({...formData, signature: sig})}
-                  disabled={isEditing}
-                />
+                        {(formData.termsAccepted || isEditing) && (
+              <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-gray-300 print:p-2">
+                <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px] print:mb-1">توقيع العميل (موافق على الشروط)</label>
+                <div className="bg-white border rounded-lg overflow-hidden print:border-gray-400">
+                  <SignaturePad
+                    value={formData.signature || ''}
+                    onChange={sig => setFormData({...formData, signature: sig})}
+                    disabled={isEditing}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-4 no-print z-40">
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-2 no-print z-40">
+        <button type="button" onClick={onBack} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all flex items-center gap-2">
+          <span>→</span> عودة
+        </button>
         <button type="submit" className="flex-grow bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all">حفظ الإتفاقية</button>
         <button type="button" onClick={() => window.print()} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all">طباعة</button>
         {isEditing && (

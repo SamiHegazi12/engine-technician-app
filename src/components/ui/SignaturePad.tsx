@@ -30,7 +30,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ value, onChange, disabled }
       const img = new Image();
       img.src = value;
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
       };
     }
   }, [value]);
