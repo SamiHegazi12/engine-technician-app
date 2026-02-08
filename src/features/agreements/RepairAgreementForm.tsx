@@ -103,7 +103,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
               year: result.year ? arabicToEnglish(result.year) : prev.vehicle.year,
               color: result.color || prev.vehicle.color,
               plateNumbers: result.plateNumbers ? arabicToEnglish(result.plateNumbers) : prev.vehicle.plateNumbers,
-              plateLetters: result.plateLetters || prev.vehicle.plateLetters
+              plateLetters: result.plateLetters ? result.plateLetters.replace(/\s/g, '').split('').join(' ').trim() : prev.vehicle.plateLetters
             },
             customer: {
               ...prev.customer,
@@ -413,6 +413,38 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
               <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
             </label>
           </div>
+        </section>
+
+        
+        {/* Summary Section */}
+        <section className="bg-blue-50 p-6 rounded-xl shadow-sm space-y-4 border border-blue-100 print:bg-white print:border-gray-300 print:p-4">
+          <h2 className="text-lg font-bold border-b border-blue-200 pb-2 text-blue-900 print:text-xs print:pb-1">ملخص الإتفاقية</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">اسم العميل:</span>
+                <span className="font-bold text-blue-900">{formData.customer.fullName || '---'}</span>
+              </div>
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">نوع المركبة:</span>
+                <span className="font-bold text-blue-900">{formData.vehicle.type} {formData.vehicle.model}</span>
+              </div>
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">رقم اللوحة:</span>
+                <span className="font-bold text-blue-900" dir="ltr">{formData.vehicle.plateLetters} | {formData.vehicle.plateNumbers}</span>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-blue-200 flex flex-col justify-center items-center space-y-1">
+              <span className="text-gray-500 text-xs uppercase tracking-wider">إجمالي المبلغ المستحق</span>
+              <div className="text-3xl font-black text-green-600">
+                {total.toFixed(2)} <span className="text-sm font-bold text-gray-400">{RIYAL_SYMBOL}</span>
+              </div>
+              {formData.discountPercent > 0 && (
+                <span className="text-[10px] text-orange-500 font-bold">شامل خصم {formData.discountPercent}%</span>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-blue-400 italic text-center">بمجرد التوقيع أدناه، فإنك تقر بصحة البيانات أعلاه والموافقة على الشروط</p>
         </section>
 
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
