@@ -98,7 +98,7 @@ const App: React.FC = () => {
         id: data.id,
         serial_number: data.serialNumber,
         created_at: data.createdAt,
-        expected_delivery_date: data.expected_delivery_date,
+        expected_delivery_date: data.expectedDeliveryDate,
         job_card_number: data.jobCardNumber || null,
         vehicle: data.vehicle,
         customer: data.customer,
