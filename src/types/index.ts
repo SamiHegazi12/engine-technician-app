@@ -3,7 +3,8 @@ export enum RepairStatus {
   IN_PROGRESS = 'قيد العمل',
   WAITING_PARTS = 'في إنتظار القطع',
   COMPLETED = 'مكتمل',
-  DELIVERED = 'تم التسليم'
+  DELIVERED = 'تم التسليم',
+  CANCELLED = 'ملغي'
 }
 
 export interface Claim {

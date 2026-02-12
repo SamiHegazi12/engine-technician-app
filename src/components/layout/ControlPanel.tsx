@@ -20,11 +20,12 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
 
   const getStatusColor = (status: RepairStatus) => {
     switch(status) {
-      case RepairStatus.NEW: return 'bg-blue-100 text-blue-700';
-      case RepairStatus.IN_PROGRESS: return 'bg-yellow-100 text-yellow-700';
-      case RepairStatus.WAITING_PARTS: return 'bg-orange-100 text-orange-700';
-      case RepairStatus.COMPLETED: return 'bg-green-100 text-green-700';
-      case RepairStatus.DELIVERED: return 'bg-gray-100 text-gray-700';
+      case 'جديد': return 'bg-blue-100 text-blue-700';
+      case 'قيد العمل': return 'bg-yellow-100 text-yellow-700';
+      case 'في إنتظار القطع': return 'bg-orange-100 text-orange-700';
+      case 'مكتمل': return 'bg-pink-100 text-pink-700';
+      case 'تم التسليم': return 'bg-green-100 text-green-700';
+      case 'ملغي': return 'bg-red-600 text-white';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
