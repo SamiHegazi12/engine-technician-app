@@ -130,12 +130,25 @@ const App: React.FC = () => {
 
   
   const handleDelete = async (ids: string[]) => {
-    if (!window.confirm(`هل أنت متأكد من حذف ${ids.length} إتفاقية؟ لا يمكن التراجع عن هذه الخطوة.`)) return;
-    const { error } = await supabase.from('repair_agreements').delete().in('id', ids);
-    if (error) {
-      alert('حدث خطأ أثناء الحذف');
-    } else {
-      await fetchAgreements();
+    try {
+      console.log('Attempting to delete IDs:', ids);
+      const { error } = await supabase
+        .from('repair_agreements')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        console.error('Deletion Error:', error);
+        alert('حدث خطأ أثناء الحذف: ' + error.message);
+      } else {
+        console.log('Successfully deleted from Supabase');
+        // Force local state update immediately
+        setAgreements(prev => prev.filter(a => !ids.includes(a.id)));
+        alert('تم حذف الإتفاقيات بنجاح');
+      }
+    } catch (err: any) {
+      console.error('Delete catch error:', err);
+      alert('خطأ غير متوقع: ' + err.message);
     }
   };
 
