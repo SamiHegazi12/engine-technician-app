@@ -265,7 +265,7 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
           <button onClick={handlePdfExport} className="text-blue-600 font-bold text-sm flex items-center gap-2 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">
             📄 تصدير PDF
           </button>
-          <button onClick={() => { onDelete(selectedIds); setSelectedIds([]); }} className="text-red-600 font-bold text-sm flex items-center gap-2 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => { if(window.confirm("هل أنت متأكد من حذف الاتفاقيات المختارة؟")) { onDelete(selectedIds); setSelectedIds([]); } }} className="text-red-600 font-bold text-sm flex items-center gap-2 hover:bg-red-50 px-4 py-2 rounded-lg transition-all active:scale-95 cursor-pointer bg-red-50/50 border border-red-100 shadow-sm">
             🗑️ حذف نهائي
           </button>
           <button onClick={() => setSelectedIds([])} className="text-gray-400 hover:text-gray-600">✕</button>
