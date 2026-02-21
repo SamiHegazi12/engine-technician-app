@@ -163,7 +163,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = async () => {
-        const compressed = await compressImage(reader.result as string, 800, 0.6);
+        const compressed = await compressImage(reader.result as string, 1600, 0.9);
         setFormData(prev => ({ ...prev, photos: [...prev.photos, `data:image/jpeg;base64,${compressed}`] }));
       };
       reader.readAsDataURL(file);
@@ -200,7 +200,6 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">تاريخ التسليم*</label>
               <input
                 type="date"
-                required
                 min={new Date().toISOString().split('T')[0]}
                 value={formData.expectedDeliveryDate}
                 onChange={e => {

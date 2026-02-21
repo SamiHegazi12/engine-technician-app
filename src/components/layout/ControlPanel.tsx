@@ -26,6 +26,7 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
       case 'مكتمل': return 'bg-pink-100 text-pink-700';
       case 'تم التسليم': return 'bg-green-100 text-green-700';
       case 'ملغي': return 'bg-red-600 text-white';
+      case 'مؤرشف': return 'bg-gray-600 text-white';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -46,6 +47,17 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  
+  const handleExport = () => {
+    const dataStr = JSON.stringify(agreements, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `repair_agreements_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 pb-24 no-print">
       <header className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -53,7 +65,7 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
           <h1 className="text-2xl font-black text-blue-900">مركز تقني المحركات</h1>
           <p className="text-gray-500">لوحة التحكم والمتابعة الرقمية</p>
         </div>
-        <button onClick={onNew} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+        <button onClick={handleExport} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-bold shadow-sm hover:bg-gray-200 transition-all flex items-center gap-2">💾 نسخة احتياطية</button><button onClick={onNew} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
           <span>+</span> إنشاء إتفاقية جديدة
         </button>
       </header>
@@ -85,7 +97,18 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
             minute: '2-digit'
           }) : '---';
 
-          return (
+          
+  const handleExport = () => {
+    const dataStr = JSON.stringify(agreements, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `repair_agreements_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  return (
             <div key={agreement.id} className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-5 space-y-4">
               <div className="flex justify-between items-start">
                 <div className="bg-gray-50 px-2 py-1 rounded text-[10px] font-mono text-gray-400">
