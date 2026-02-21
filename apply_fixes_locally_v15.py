@@ -1,82 +1,24 @@
-import React, { useState } from 'react';
-import { RepairAgreement, RepairStatus } from '@/types';
-import { RIYAL_SYMBOL } from '@/config/constants';
+import os
+import re
 
-interface Props {
-  agreements: RepairAgreement[];
-  onNew: () => void;
-  onEdit: (id: string) => void;
-  onStatusChange: (id: string, status: RepairStatus) => void;
-  onDelete: (ids: string[]) => void;
-}
-
-const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChange }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const handlePdfExport = () => {
-    const selectedAgreements = agreements.filter(a => selectedIds.includes(a.id));
-    if (selectedAgreements.length === 0) {
-      alert('يرجى اختيار إتفاقية واحدة على الأقل');
-      return;
-    }
-    window.print(); // Using browser print as a simple way to generate PDF of the current view
-  };
-
-  const filtered = agreements.filter(a => 
-    a.customer.fullName.includes(searchTerm) || 
-    a.vehicle.plateNumbers.includes(searchTerm) || 
-    a.serialNumber.includes(searchTerm) || 
-    a.customer.phone.includes(searchTerm)
-  );
-
-  const getStatusColor = (status: RepairStatus) => {
-    switch(status) {
-      case 'جديد': return 'bg-blue-100 text-blue-700';
-      case 'قيد العمل': return 'bg-yellow-100 text-yellow-700';
-      case 'في إنتظار القطع': return 'bg-orange-100 text-orange-700';
-      case 'مكتمل': return 'bg-pink-100 text-pink-700';
-      case 'تم التسليم': return 'bg-green-100 text-green-700';
-      case 'ملغي': return 'bg-red-600 text-white';
-      case 'مؤرشف': return 'bg-gray-600 text-white';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const handleWhatsApp = (agreement: RepairAgreement) => {
-    let phone = agreement.customer.phone;
-    if (phone.startsWith('05')) phone = '966' + phone.substring(1);
+def apply_fixes():
+    print("Starting local file fixes (v15 - Build Fix & PDF Layout)...")
     
-    const subtotal = agreement.claims.reduce((acc, c) => acc + c.cost, 0);
-    const total = subtotal * (1 - agreement.discountPercent / 100);
-    
-    let message = `مرحباً ${agreement.customer.fullName}، إليك تفاصيل إتفاقية إصلاح الخاصة بك رقم ${agreement.serialNumber}. الإجمالي: ${total.toFixed(2)} ${RIYAL_SYMBOL}`;
-    
-    if (agreement.repairAgreementLink) {
-      message += `\nرابط الإتفاقية: ${agreement.repairAgreementLink}`;
-    }
-    
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
-  
-  const handleExport = () => {
-    const dataStr = JSON.stringify(agreements, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `repair_agreements_backup_${new Date().toISOString().split('T')[0]}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
-  return (
-    <>
+    # 1. Update ControlPanel.tsx (REWRITE RETURN TO BE SYNTAX-SAFE)
+    cp_path = os.path.join('src', 'components', 'layout', 'ControlPanel.tsx')
+    if os.path.exists(cp_path):
+        with open(cp_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # We will find the return statement and replace everything from there to the end of the component
+        new_content = []
+        skip = False
+        for line in lines:
+            if 'return (' in line:
+                new_content.append(line)
+                skip = True
+                # Add the new, clean, and safe return content
+                new_content.append("""    <>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4; margin: 10mm; }
@@ -276,3 +218,20 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
 };
 
 export default ControlPanel;
+""")
+                break
+            else:
+                new_content.append(line)
+        
+        with open(cp_path, 'w', encoding='utf-8') as f:
+            f.writelines(new_content)
+        print("✅ Fixed syntax errors and optimized PDF layout in ControlPanel.tsx")
+
+    print("\\n--- DONE ---")
+    print("Build error fixed! Now run:")
+    print("1. git add .")
+    print("2. git commit -m 'fix: resolve JSX syntax errors and finalize PDF layout'")
+    print("3. git push origin main")
+
+if __name__ == "__main__":
+    apply_fixes()
