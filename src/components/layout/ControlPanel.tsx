@@ -7,10 +7,27 @@ interface Props {
   onNew: () => void;
   onEdit: (id: string) => void;
   onStatusChange: (id: string, status: RepairStatus) => void;
+  onDelete: (ids: string[]) => void;
 }
 
 const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handlePdfExport = () => {
+    const selectedAgreements = agreements.filter(a => selectedIds.includes(a.id));
+    if (selectedAgreements.length === 0) {
+      alert('يرجى اختيار إتفاقية واحدة على الأقل');
+      return;
+    }
+    window.print(); // Using browser print as a simple way to generate PDF of the current view
+  };
+
   const filtered = agreements.filter(a => 
     a.customer.fullName.includes(searchTerm) || 
     a.vehicle.plateNumbers.includes(searchTerm) || 
@@ -109,7 +126,14 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
   };
 
   return (
-            <div key={agreement.id} className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-5 space-y-4">
+            <div key={agreement.id} className={`bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-5 space-y-4 ${selectedIds.includes(agreement.id) ? "ring-2 ring-blue-500 border-transparent" : ""}`}>
+                
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.includes(agreement.id)} 
+                  onChange={() => toggleSelect(agreement.id)}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer no-print"
+                />
               <div className="flex justify-between items-start">
                 <div className="bg-gray-50 px-2 py-1 rounded text-[10px] font-mono text-gray-400">
                   {agreement.serialNumber}
@@ -178,7 +202,22 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
             <p className="text-gray-400">لا توجد إتفاقيات إصلاح تطابق بحثك حالياً</p>
           </div>
         )}
-      </div>
+      
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white border shadow-2xl rounded-2xl p-4 flex items-center gap-6 z-50 no-print animate-in fade-in slide-in-from-bottom-4">
+          <span className="text-sm font-bold text-blue-900">{selectedIds.length} مختارة</span>
+          <div className="h-6 w-px bg-gray-200" />
+          <button onClick={handlePdfExport} className="text-blue-600 font-bold text-sm flex items-center gap-2 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">
+            📄 تصدير PDF
+          </button>
+          <button onClick={() => { onDelete(selectedIds); setSelectedIds([]); }} className="text-red-600 font-bold text-sm flex items-center gap-2 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">
+            🗑️ حذف نهائي
+          </button>
+          <button onClick={() => setSelectedIds([])} className="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+      )}
+
+    </div>
     </div>
   );
 };

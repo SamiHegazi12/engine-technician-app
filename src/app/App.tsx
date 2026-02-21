@@ -128,6 +128,17 @@ const App: React.FC = () => {
     }
   };
 
+  
+  const handleDelete = async (ids: string[]) => {
+    if (!window.confirm(`هل أنت متأكد من حذف ${ids.length} إتفاقية؟ لا يمكن التراجع عن هذه الخطوة.`)) return;
+    const { error } = await supabase.from('repair_agreements').delete().in('id', ids);
+    if (error) {
+      alert('حدث خطأ أثناء الحذف');
+    } else {
+      await fetchAgreements();
+    }
+  };
+
   const handleStatusChange = async (id: string, status: RepairStatus) => {
     const { error } = await supabase
       .from('repair_agreements')
@@ -177,7 +188,7 @@ const App: React.FC = () => {
               agreements={agreements} 
               onNew={() => { setEditingId(null); setView('NEW_AGREEMENT'); }} 
               onEdit={(id) => { setEditingId(id); setView('EDIT_AGREEMENT'); }} 
-              onStatusChange={handleStatusChange} 
+              onStatusChange={handleStatusChange} onDelete={handleDelete} 
             />
           )}
           {(view === 'NEW_AGREEMENT' || view === 'EDIT_AGREEMENT') && (
