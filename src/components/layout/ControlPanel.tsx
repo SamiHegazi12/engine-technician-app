@@ -76,7 +76,52 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 pb-24 no-print">
+    <>
+    
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { size: A4; margin: 10mm; }
+          body * { visibility: hidden; }
+          .print-section, .print-section * { visibility: visible; }
+          .print-section { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+          .page-break { page-break-after: always; border-bottom: 1px dashed #ccc; padding-bottom: 20px; margin-bottom: 20px; }
+        }
+      `}} />
+      
+      <div className="print-section hidden print:block">
+        <h1 className="text-2xl font-bold text-center mb-6 border-b pb-4">تقرير إتفاقيات الإصلاح - مركز تقني المحركات</h1>
+        {agreements.filter(a => selectedIds.includes(a.id)).map((agreement, idx) => (
+          <div key={agreement.id} className="page-break p-4 space-y-4">
+            <div className="flex justify-between border-b pb-2">
+              <span className="font-bold text-lg">رقم العقد: {agreement.serialNumber}</span>
+              <span className="text-blue-600 font-bold">{agreement.status}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><strong>العميل:</strong> {agreement.customer.fullName}</div>
+              <div><strong>الجوال:</strong> {agreement.customer.phone}</div>
+              <div><strong>السيارة:</strong> {agreement.vehicle.type} {agreement.vehicle.model}</div>
+              <div><strong>اللوحة:</strong> {agreement.vehicle.plateLetters} | {agreement.vehicle.plateNumbers}</div>
+              <div><strong>تاريخ الإنشاء:</strong> {new Date(agreement.createdAt).toLocaleDateString('en-GB')}</div>
+              <div><strong>رقم البطاقة:</strong> {agreement.jobCardNumber || '---'}</div>
+            </div>
+            <div className="bg-gray-50 p-3 rounded border">
+              <h4 className="text-xs font-bold mb-1">الشكاوى والملاحظات:</h4>
+              <ul className="text-xs space-y-1">
+                {agreement.claims.map((c, i) => (
+                  <li key={i}>• {c.description}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-xl font-bold text-green-600">
+                إجمالي المبلغ: {((agreement.claims.reduce((acc, c) => acc + c.cost, 0)) * (1 - agreement.discountPercent / 100)).toFixed(2)} ر.س
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+<div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 pb-24 no-print">
       <header className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-black text-blue-900">مركز تقني المحركات</h1>
@@ -126,6 +171,7 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
   };
 
   return (
+    <>
             <div key={agreement.id} className={`bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-5 space-y-4 ${selectedIds.includes(agreement.id) ? "ring-2 ring-blue-500 border-transparent" : ""}`}>
                 
                 <input 
@@ -219,6 +265,7 @@ const ControlPanel: React.FC<Props> = ({ agreements, onNew, onEdit, onStatusChan
 
     </div>
     </div>
+    </>
   );
 };
 
