@@ -131,24 +131,32 @@ const App: React.FC = () => {
   
   const handleDelete = async (ids: string[]) => {
     try {
-      console.log('Attempting to delete IDs:', ids);
-      const { error } = await supabase
+      console.log('V18: Deleting IDs:', ids);
+      
+      // Attempt deletion
+      const { data, error, status, statusText } = await supabase
         .from('repair_agreements')
         .delete()
-        .in('id', ids);
+        .in('id', ids)
+        .select(); // Adding .select() sometimes helps verify if rows were actually affected
 
       if (error) {
-        console.error('Deletion Error:', error);
-        alert('حدث خطأ أثناء الحذف: ' + error.message);
+        console.error('V18 Delete Error:', error);
+        alert(`فشل الحذف!
+السبب: ${error.message}
+الكود: ${error.code}
+الحالة: ${status} ${statusText}`);
+      } else if (!data || data.length === 0) {
+        console.warn('V18: No rows deleted. This usually means RLS (Security) is blocking it.');
+        alert('تنبيه: لم يتم حذف أي بيانات. قد يكون هناك قيود أمان (RLS) في قاعدة البيانات تمنع الحذف.');
       } else {
-        console.log('Successfully deleted from Supabase');
-        // Force local state update immediately
+        console.log('V18: Success!', data);
         setAgreements(prev => prev.filter(a => !ids.includes(a.id)));
-        alert('تم حذف الإتفاقيات بنجاح');
+        alert(`تم حذف ${data.length} إتفاقية بنجاح`);
       }
     } catch (err: any) {
-      console.error('Delete catch error:', err);
-      alert('خطأ غير متوقع: ' + err.message);
+      console.error('V18 Catch:', err);
+      alert('خطأ فني: ' + err.message);
     }
   };
 
