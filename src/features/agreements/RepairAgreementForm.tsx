@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RepairAgreement, Claim, RepairStatus } from '@/types';
 import { COLORS, RIYAL_SYMBOL, TERMS_AND_CONDITIONS, CAR_MANUFACTURERS } from '@/config/constants';
-import SignaturePad from '@/components/ui/SignaturePad';
 import { extractVehicleInfoFromImage } from '@/lib/gemini';
+import SignaturePad from 'signature_pad';
 
 interface Props {
   initialData?: RepairAgreement;
@@ -14,6 +14,8 @@ interface Props {
 const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agreementsCount = 0 }) => {
   const isEditing = !!initialData;
   const currentYear = new Date().getFullYear().toString();
+  const signaturePadRef = useRef<SignaturePad | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   const generateSerial = useCallback(() => {
     const count = (agreementsCount + 1).toString().padStart(4, '0');
@@ -54,6 +56,41 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
   const [isScanning, setIsScanning] = useState(false);
   const [carSearch, setCarSearch] = useState('');
   const [showCarList, setShowCarList] = useState(false);
+
+  // Initialize Signature Pad
+  useEffect(() => {
+    if (canvasRef.current && (formData.termsAccepted || isEditing)) {
+      const canvas = canvasRef.current;
+      signaturePadRef.current = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)'
+      });
+
+      if (formData.signature) {
+        signaturePadRef.current.fromDataURL(formData.signature);
+      }
+
+      signaturePadRef.current.on = () => {
+        const dataUrl = signaturePadRef.current?.toDataURL();
+        if (dataUrl) {
+          setFormData(prev => ({ ...prev, signature: dataUrl }));
+        }
+      };
+    }
+
+    return () => {
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+        signaturePadRef.current = null;
+      }
+    };
+  }, [formData.termsAccepted, isEditing]);
+
+  const clearSignature = () => {
+    if (signaturePadRef.current) {
+      signaturePadRef.current.clear();
+      setFormData(prev => ({ ...prev, signature: '' }));
+    }
+  };
 
   useEffect(() => {
     if (isEditing && formData.serialNumber.includes('-')) {
@@ -233,11 +270,7 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">تاريخ التسليم المتوقع*</label>
-              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => {
-                const date = new Date(e.target.value);
-                if (date.getDay() === 5) { alert("عذراً، يوم الجمعة إجازة. يرجى اختيار تاريخ آخر."); setFormData(prev => ({...prev, expectedDeliveryDate: ''})); }
-                else { setFormData(prev => ({...prev, expectedDeliveryDate: e.target.value})); }
-              }} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
+              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => setFormData(prev => ({...prev, expectedDeliveryDate: e.target.value}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم بطاقة العمل</label>
@@ -381,7 +414,8 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             ))}
             <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 no-print">
               <span className="text-3xl text-gray-400">+</span>
-              <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+              <span className="text-xs text-gray-500">إضافة صورة</span>
+              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
             </label>
           </div>
         </section>
@@ -416,11 +450,21 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             <label className="block font-bold mb-4 text-lg print:text-sm print:mb-1">توقيع العميل:</label>
             <div className="print:hidden">
               {(formData.termsAccepted || isEditing) && (
-                <SignaturePad 
-                  onSave={sig => setFormData(prev => ({...prev, signature: sig}))} 
-                  disabled={isEditing && !!formData.signature} 
-                  initialSignature={formData.signature}
-                />
+                <div className="bg-white border rounded-lg overflow-hidden">
+                  <div className="relative w-full">
+                    <canvas 
+                      ref={canvasRef}
+                      className="signature-pad w-full h-[220px] border border-gray-300 rounded-lg bg-white touch-none shadow-inner cursor-crosshair"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={clearSignature}
+                      className="absolute top-3 left-3 text-sm font-bold bg-red-50 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-100 border border-red-200 transition-colors"
+                    >
+                      مسح التوقيع
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
             <div className="hidden print:block border-b-2 border-gray-300 h-24 flex items-center justify-center">
