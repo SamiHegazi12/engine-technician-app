@@ -270,11 +270,23 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">تاريخ التسليم المتوقع*</label>
-              <input type="date" required min={new Date().toISOString().split('T')[0]} value={formData.expectedDeliveryDate} onChange={e => setFormData(prev => ({...prev, expectedDeliveryDate: e.target.value}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
+              <input 
+                type="date" 
+                required 
+                min={new Date().toISOString().split('T')[0]} 
+                value={formData.expectedDeliveryDate} 
+                onChange={(e) => setFormData(prev => ({...prev, expectedDeliveryDate: e.target.value}))} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" 
+              />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم بطاقة العمل</label>
-              <input type="text" value={formData.jobCardNumber} onChange={e => setFormData(prev => ({...prev, jobCardNumber: e.target.value}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
+              <input 
+                type="text" 
+                value={formData.jobCardNumber} 
+                onChange={(e) => setFormData(prev => ({...prev, jobCardNumber: e.target.value}))} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" 
+              />
             </div>
           </div>
         </section>
@@ -296,7 +308,14 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-4">
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم الشاصي (VIN)*</label>
-              <input type="text" required maxLength={17} value={formData.vehicle.vin} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, vin: e.target.value.toUpperCase()}}))} className="w-full border rounded p-2 text-left font-mono font-bold print:border-none print:p-0 print:text-[11px]" />
+              <input 
+                type="text" 
+                required 
+                maxLength={17} 
+                value={formData.vehicle.vin} 
+                onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, vin: e.target.value.toUpperCase()}}))} 
+                className="w-full border rounded p-2 text-left font-mono font-bold print:border-none print:p-0 print:text-[11px]" 
+              />
             </div>
             <div className="text-right relative">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">نوع السيارة*</label>
@@ -320,15 +339,32 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">الموديل*</label>
-              <input type="text" required value={formData.vehicle.model} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, model: e.target.value}}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
+              <input 
+                type="text" 
+                required 
+                value={formData.vehicle.model} 
+                onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, model: e.target.value}}))} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" 
+              />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">سنة الصنع*</label>
-              <input type="text" required value={formData.vehicle.year} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, year: convertArabicToEnglish(e.target.value)}}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" />
+              <input 
+                type="text" 
+                required 
+                value={formData.vehicle.year} 
+                onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, year: convertArabicToEnglish(e.target.value)}}))} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" 
+              />
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">اللون*</label>
-              <select required value={formData.vehicle.color} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, color: e.target.value}}))} className="w-full border rounded p-2 text-right print:appearance-none print:border-none print:p-0 print:text-[11px]">
+              <select 
+                required 
+                value={formData.vehicle.color} 
+                onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, color: e.target.value}}))} 
+                className="w-full border rounded p-2 text-right print:appearance-none print:border-none print:p-0 print:text-[11px]"
+              >
                 <option value="">اختر اللون</option>
                 {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -336,13 +372,34 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">اللوحة*</label>
               <div className="flex gap-1 print:text-[11px]">
-                <input type="text" required value={formData.vehicle.plateLetters} onChange={e => handlePlateLettersChange(e.target.value)} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="ح ر ف" />
-                <input type="text" required value={formData.vehicle.plateNumbers} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, plateNumbers: convertArabicToEnglish(e.target.value.replace(/\D/g, '').slice(0, 4))}}))} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="أرقام" />
+                <input 
+                  type="text" 
+                  required 
+                  value={formData.vehicle.plateLetters} 
+                  onChange={(e) => handlePlateLettersChange(e.target.value)} 
+                  className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" 
+                  placeholder="ح ر ف" 
+                />
+                <input 
+                  type="text" 
+                  required 
+                  value={formData.vehicle.plateNumbers} 
+                  onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, plateNumbers: convertArabicToEnglish(e.target.value.replace(/\D/g, '').slice(0, 4))}}))} 
+                  className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" 
+                  placeholder="أرقام" 
+                />
               </div>
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">العداد*</label>
-              <input type="number" required value={formData.vehicle.odometer === 0 ? '' : formData.vehicle.odometer} onChange={e => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, odometer: parseInt(e.target.value) || 0}}))} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" placeholder="0" />
+              <input 
+                type="number" 
+                required 
+                value={formData.vehicle.odometer === 0 ? '' : formData.vehicle.odometer} 
+                onChange={(e) => setFormData(prev => ({...prev, vehicle: {...prev.vehicle, odometer: parseInt(e.target.value) || 0}}))} 
+                className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[11px]" 
+                placeholder="0" 
+              />
             </div>
           </div>
         </section>
@@ -350,9 +407,40 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
         <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-gray-100 print:p-3 print:shadow-none">
           <h2 className="text-lg font-bold border-b pb-2 mb-2 text-blue-900 print:text-sm print:mb-1 print:pb-1">بيانات العميل</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-4">
-            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">اسم العميل*</label><input type="text" required value={formData.customer.fullName} onChange={e => setFormData(prev => ({...prev, customer: {...prev.customer, fullName: e.target.value}}))} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" /></div>
-            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم الجوال*</label><input type="tel" required pattern="05[0-9]{8}" maxLength={10} value={formData.customer.phone} onChange={e => setFormData(prev => ({...prev, customer: {...prev.customer, phone: convertArabicToEnglish(e.target.value.replace(/\D/g, ''))}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" /></div>
-            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم الهوية*</label><input type="text" required pattern="[12][0-9]{9}" maxLength={10} value={formData.customer.idNumber} onChange={e => setFormData(prev => ({...prev, customer: {...prev.customer, idNumber: convertArabicToEnglish(e.target.value.replace(/\D/g, ''))}})} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" /></div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">اسم العميل*</label>
+              <input 
+                type="text" 
+                required 
+                value={formData.customer.fullName} 
+                onChange={(e) => setFormData(prev => ({...prev, customer: {...prev.customer, fullName: e.target.value}}))} 
+                className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" 
+              />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم الجوال*</label>
+              <input 
+                type="tel" 
+                required 
+                pattern="05[0-9]{8}" 
+                maxLength={10} 
+                value={formData.customer.phone} 
+                onChange={(e) => setFormData(prev => ({...prev, customer: {...prev.customer, phone: convertArabicToEnglish(e.target.value.replace(/\D/g, ''))}}))} 
+                className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" 
+              />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[10px]">رقم الهوية*</label>
+              <input 
+                type="text" 
+                required 
+                pattern="[12][0-9]{9}" 
+                maxLength={10} 
+                value={formData.customer.idNumber} 
+                onChange={(e) => setFormData(prev => ({...prev, customer: {...prev.customer, idNumber: convertArabicToEnglish(e.target.value.replace(/\D/g, ''))}}))} 
+                className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[11px]" 
+              />
+            </div>
           </div>
         </section>
 
