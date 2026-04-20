@@ -322,5 +322,207 @@ const RepairAgreementForm: React.FC<Props> = ({ initialData, onSave, onBack, agr
             </div>
             <div className="text-right">
               <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">سنة الصنع*</label>
-              <input type="text" required maxLength={4} value={formData.vehicle.year} onChange={(e: React.ChangeEvent<HTMLInputEl
-(Content truncated due to size limit. Use line ranges to read remaining content)
+              <input type="text" required maxLength={4} value={formData.vehicle.year} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, vehicle: {...prev.vehicle, year: arabicToEnglish(e.target.value.replace(/\D/g, ''))}}))} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">العداد*</label>
+              <input type="text" required value={formData.vehicle.odometer === 0 ? '' : formData.vehicle.odometer} onChange={(e) => { const val = arabicToEnglish(e.target.value.replace(/\D/g, '')).slice(0, 6); setFormData((prev: RepairAgreement) => ({...prev, vehicle: {...prev.vehicle, odometer: parseInt(val) || 0}})); }} className="w-full border rounded p-2 text-right print:border-none print:p-0 print:text-[10px]" placeholder="0" />
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">اللون*</label>
+              <select required value={formData.vehicle.color} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((prev: RepairAgreement) => ({...prev, vehicle: {...prev.vehicle, color: e.target.value}}))} className="w-full border rounded p-2 text-right print:appearance-none print:border-none print:p-0 print:text-[10px]">
+                <option value="">اختر اللون</option>
+                {COLORS.map((c: string) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">اللوحة*</label>
+              <div className="flex gap-1 print:text-[10px]">
+                <input type="text" required value={formData.vehicle.plateLetters} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePlateLettersChange(e.target.value)} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="ح ر ف" />
+                <input type="text" required value={formData.vehicle.plateNumbers} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, vehicle: {...prev.vehicle, plateNumbers: arabicToEnglish(e.target.value.replace(/\D/g, '')).slice(0, 4)}}))} className="w-1/2 border rounded p-2 text-center print:border-none print:p-0" placeholder="أرقام" />
+              </div>
+            </div>
+            <div className="text-right">
+              <label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الهيكل (VIN)*</label>
+              <input
+                type="text"
+                required
+                maxLength={17}
+                value={formData.vehicle.vin}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, vehicle: {...prev.vehicle, vin: e.target.value.toUpperCase()}}))}
+                className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]"
+                placeholder="أدخل رقم الهيكل"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+          <h2 className="text-lg font-bold border-b pb-2 mb-2 text-blue-900 print:text-xs print:mb-0 print:pb-0">بيانات العميل</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
+            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">اسم العميل*</label><input type="text" required value={formData.customer.fullName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, customer: {...prev.customer, fullName: e.target.value}}))} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" /></div>
+            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الجوال*</label><input type="tel" required pattern="05[0-9]{8}" maxLength={10} value={formData.customer.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, customer: {...prev.customer, phone: arabicToEnglish(e.target.value.replace(/\D/g, ''))}}))} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" /></div>
+            <div className="text-right"><label className="block text-sm mb-1 text-gray-600 font-bold print:text-[8px]">رقم الهوية*</label><input type="text" required pattern="[12][0-9]{9}" maxLength={10} value={formData.customer.idNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, customer: {...prev.customer, idNumber: arabicToEnglish(e.target.value.replace(/\D/g, ''))}}))} className="w-full border rounded p-2 text-right font-bold print:border-none print:p-0 print:text-[10px]" /></div>
+          </div>
+        </section>
+
+        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+          <div className="flex justify-between items-center border-b pb-2 print:pb-0"><h2 className="text-lg font-bold text-blue-900 print:text-xs">الطلبات والأعطال</h2><button type="button" onClick={addClaim} className="text-blue-600 text-sm font-bold no-print">+ إضافة طلب</button></div>
+          <div className="space-y-2 print:space-y-0">
+            <div className="flex gap-2 items-center font-bold text-gray-600 border-b pb-2 no-print">
+              <div className="flex-grow text-right">وصف العطل / الطلب</div>
+              <div className="w-24 text-center">التكلفة</div>
+              <div className="w-10"></div>
+            </div>
+            {formData.claims.map((claim: Claim, idx: number) => (
+              <div key={claim.id} className="flex gap-2 items-center no-print">
+                <input type="text" required value={claim.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateClaim(idx, 'description', e.target.value)} className="flex-grow border rounded p-2 text-right" placeholder="وصف العطل أو الطلب" />
+                <input type="number" required value={claim.cost === 0 ? '' : claim.cost} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateClaim(idx, 'cost', parseFloat(e.target.value) || 0)} className="w-24 border rounded p-2 text-left" placeholder="0.00" />
+                <button type="button" onClick={() => removeClaim(claim.id)} className="text-red-500 font-bold px-2 w-10">✕</button>
+              </div>
+            ))}
+          </div>
+          <div className="hidden print:block">
+            <div className="flex justify-between border-b-2 border-gray-800 py-1 text-[10px] font-bold">
+              <span className="flex-grow text-right">وصف العطل / الطلب</span>
+              <span className="w-20 text-left">التكلفة</span>
+            </div>
+            {formData.claims.map((c: Claim, i: number) => (
+              <div key={i} className="flex justify-between border-b py-1 text-[10px]">
+                <span className="flex-grow text-right">{c.description}</span>
+                <span className="w-20 text-left">{c.cost.toFixed(2)} {RIYAL_SYMBOL}</span>
+              </div>
+            ))}
+          </div>
+          <div className="pt-4 space-y-2 border-t">
+            <div className="flex justify-between text-gray-600 print:text-[10px]">
+              <span className="font-bold flex-grow text-left">المجموع الفرعي:</span>
+              <span className="font-bold w-24 text-left">{subtotal.toFixed(2)} {RIYAL_SYMBOL}</span>
+            </div>
+
+            <div className="flex justify-between items-center no-print">
+              <span className="font-bold flex-grow text-left">الخصم:</span>
+              <div className="flex items-center gap-2 w-24">
+                <input type="number" className="w-full border rounded p-1 text-left font-bold" value={formData.discountPercent === 0 ? '' : formData.discountPercent} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: RepairAgreement) => ({...prev, discountPercent: parseFloat(e.target.value) || 0}))} />
+                <span className="text-gray-500">%</span>
+              </div>
+            </div>
+
+            <div className="hidden print:flex justify-between text-gray-600 text-[10px]">
+              <span className="font-bold flex-grow text-left">الخصم:</span>
+              <span className="font-bold w-24 text-left">{formData.discountPercent}%</span>
+            </div>
+
+            <div className="flex justify-between text-xl font-black text-blue-900 pt-1 print:text-xs print:pt-0">
+              <span className="flex-grow text-left">الإجمالي النهائي:</span>
+              <span className="w-24 text-left">{total.toFixed(2)} {RIYAL_SYMBOL}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+          <h2 className="text-lg font-bold border-b pb-2 text-blue-900 print:text-xs print:pb-0 print:mb-0">صور حالة الهيكل</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:grid-cols-4 print:gap-1">
+            {formData.photos.map((p: string, idx: number) => (
+              <div key={idx} className="relative aspect-square">
+                <img src={p} alt="Vehicle" className="w-full h-full object-cover rounded-lg border shadow-sm" />
+                <button type="button" onClick={() => setFormData((prev: RepairAgreement) => ({...prev, photos: prev.photos.filter((_: string, i: number) => i !== idx)}))} className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center no-print">✕</button>
+              </div>
+            ))}
+            <label className="border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 no-print">
+              <span className="text-2xl text-gray-400">+</span>
+              <span className="text-xs text-gray-500">إضافة صورة</span>
+              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+            </label>
+          </div>
+        </section>
+
+        {/* Summary Section */}
+        <section className="bg-blue-50 p-6 rounded-xl shadow-sm space-y-4 border border-blue-100 print:bg-white print:border-gray-300 print:p-4">
+          <h2 className="text-lg font-bold border-b border-blue-200 pb-2 text-blue-900 print:text-xs print:pb-1">ملخص الإتفاقية</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">اسم العميل:</span>
+                <span className="font-bold text-blue-900">{formData.customer.fullName || '---'}</span>
+              </div>
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">نوع المركبة:</span>
+                <span className="font-bold text-blue-900">{formData.vehicle.type} {formData.vehicle.model}</span>
+              </div>
+              <div className="flex justify-between border-b border-blue-100 pb-1">
+                <span className="text-gray-500">رقم اللوحة:</span>
+                <span className="font-bold text-blue-900" dir="ltr">{formData.vehicle.plateLetters} | {formData.vehicle.plateNumbers}</span>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-blue-200 flex flex-col justify-center items-center space-y-1">
+              <span className="text-gray-500 text-xs uppercase tracking-wider">إجمالي المبلغ المستحق</span>
+              <div className="text-3xl font-black text-green-600">
+                {total.toFixed(2)} <span className="text-sm font-bold text-gray-400">{RIYAL_SYMBOL}</span>
+              </div>
+              {formData.discountPercent > 0 && (
+                <span className="text-[10px] text-orange-500 font-bold">شامل خصم {formData.discountPercent}%</span>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-blue-400 italic text-center">بمجرد التوقيع أدناه، فإنك تقر بصحة البيانات أعلاه والموافقة على الشروط</p>
+        </section>
+
+        <section className="bg-white p-6 rounded-xl shadow-sm space-y-4 border print:border-none print:p-0 print:shadow-none">
+          <h2 className="text-lg font-bold border-b pb-2 text-blue-900 print:text-xs print:pb-0 print:mb-0">التوقيع والموافقة</h2>
+          <div className="space-y-4">
+            <div className="flex items-start gap-2">
+              <input type="checkbox" id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="mt-1" />
+              <label htmlFor="terms" className="text-sm text-gray-600">
+                أوافق على <button type="button" onClick={() => setShowTerms(true)} className="text-blue-600 font-bold underline">الشروط والأحكام</button> الخاصة بمركز تقني المحركات
+              </label>
+            </div>
+
+            {(formData.termsAccepted || isEditing) && (
+              <div className="border rounded-lg p-4 bg-gray-50 print:bg-white print:border-gray-300 print:p-2">
+                <label className="block text-sm font-bold mb-2 text-gray-700 print:text-[8px] print:mb-1">توقيع العميل (موافق على الشروط)</label>
+                <div className="bg-white border rounded-lg overflow-hidden print:border-gray-400">
+                  <SignaturePad
+                    value={formData.signature || ''}
+                    onChange={(sig: string) => setFormData({...formData, signature: sig})}
+                    disabled={isEditing}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex gap-2 no-print z-40">
+        <button type="button" onClick={onBack} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all flex items-center gap-2">
+          <span>→</span> عودة
+        </button>
+        <button type="submit" className="flex-grow bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all">حفظ الإتفاقية</button>
+        <button type="button" onClick={() => window.print()} className="bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-xl border hover:bg-gray-200 transition-all">طباعة</button>
+        {isEditing && (
+          <button type="button" onClick={handleWhatsAppShare} className="bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-green-700 transition-all">واتساب</button>
+        )}
+      </div>
+
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 no-print">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-bold text-lg">الشروط والأحكام</h3>
+              <button onClick={() => setShowTerms(false)} className="text-gray-500 text-2xl">✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto text-right whitespace-pre-wrap leading-relaxed text-gray-700">
+              {TERMS_AND_CONDITIONS}
+            </div>
+            <div className="p-4 border-t">
+              <button onClick={() => setShowTerms(false)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </form>
+  );
+};
+
+export default RepairAgreementForm;
